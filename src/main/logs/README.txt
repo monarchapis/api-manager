@@ -1,0 +1,1 @@
+# This directory contains the system log files.  The log4j configuration is located at conf/log4j.properties.   

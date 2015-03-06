@@ -1,0 +1,388 @@
+swagger: '2.0'
+info:
+    title:          Analytics V1 API
+    description:    This interface captures event data and generates aggregate reports
+    termsOfService: http://monarchapis.com/terms/
+    contact: 
+        name:           Monarch Support
+        url:            http://www.monarchapis.com/support
+        email:          support@monarchapis.com
+    license: 
+        name:           Apache 2.0
+        url:            http://www.apache.org/licenses/LICENSE-2.0.html
+    version:        1.0.0
+host:           ${host}
+basePath:       ${context}/analytics/v1
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+    /{eventType}:
+        post: 
+            tags: 
+                - events
+            summary:        Retrieves the event and field descriptor information
+            description:    TODO
+            operationId:    getEventDescriptor
+            x-resource-operation: getDescriptor
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+            responses:
+                200:
+                    description:    The authentication response with context information
+                    schema:
+                        $ref: '#/definitions/EventDescriptor'
+    /{eventType}/events:
+        post:
+            tags:
+                - events
+            summary:        Creates a new event
+            description:    TODO
+            operationId:    createEvent
+            x-resource-operation: create
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/ObjectData'
+            responses:
+                204:
+                    description:    The event was logged successfully
+        get:
+            tags:
+                - events
+            summary:        Queries events in a specified time range
+            description:    TODO
+            operationId:    queryEvents
+            x-resource-operation: query
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+            responses:
+                200:
+                    description:    The events that match the given criteria
+                    schema:
+                        $ref:               '#/definitions/EventsResponse'
+    /{eventType}/metrics/{metric}/{tier}/series:
+        get: 
+            tags: 
+                - metrics
+            summary:        Retrieve metric time series for a specified time range
+            description:    TODO
+            operationId:    metrics
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+                -
+                    $ref:               '#/parameters/metric'
+                -
+                    name:               tier
+                    in:                 path
+                    type:               string
+                    description:        The tier to return
+                    required:           true
+            responses:
+                200:
+                    description:    The metrics for the given criteria
+                    schema:
+                        $ref:               '#/definitions/MetricsResponse'
+    /{eventType}/metrics/{metric}/{tier}/counts:
+        get: 
+            tags: 
+                - metrics
+            summary:        Retrieve metric counts for a specified time range
+            description:    TODO
+            operationId:    metrics
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+                -
+                    $ref:               '#/parameters/metric'
+                -
+                    name:               tier
+                    in:                 path
+                    type:               string
+                    description:        The tier to return
+                    required:           true
+            responses:
+                200:
+                    description:    The metrics for the given criteria
+                    schema:
+                        $ref:               '#/definitions/ValueCountsResponse'
+    /{eventType}/metrics/{metric}/distinct:
+        get: 
+            tags: 
+                - metrics
+            summary:        Retrieve distinct values for a specified time range
+            description:    TODO
+            operationId:    distinct
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+                -
+                    $ref:               '#/parameters/metric'
+            responses:
+                200:
+                    description:    The metrics for the given criteria
+                    schema:
+                        $ref:               '#/definitions/DistinctResponse'
+#
+#
+#
+definitions:
+    ObjectData:
+        additionalProperties:       true
+    EventDescriptor:
+        required:
+            - name
+            - display
+            - timezone
+        properties:
+            name:
+                type:               string
+            display:
+                type:               string
+            timezone:
+                type:               string
+            fields:
+                type:               array
+                items:
+                    $ref:               '#/definitions/FieldDescriptor'
+            indexes:
+                type:               array
+                items:
+                    $ref:               '#/definitions/Index'
+    FieldDescriptor:
+        required:
+            - name
+            - display
+            - type
+            - usage
+            - required
+        properties:
+            name:
+                type:               string
+            display:
+                type:               string
+            type:
+                type:               string
+                enum:
+                    - string
+                    - boolean
+                    - integer
+                    - decimal
+                    - object
+                    - array
+                    - code
+            usage:
+                type:               string
+                enum:
+                    - dimension
+                    - measure
+            required:
+                type:               boolean
+            default:
+                type:               string
+    Index:
+        required:
+            - name
+            - "on"
+        properties:
+            name:
+                type:               string
+            on:
+                type:               array
+                items:
+                    type:               string
+            unique:
+                type:               boolean
+                default:            false
+    AnalyticsResponse:
+        required:
+            - start
+            - end
+            - timezoneOffset
+        properties:
+            start:
+                type:               string
+                format:             datetime
+            end:
+                type:               string
+                format:             datetime
+            timezoneOffset:
+                type:               integer
+                format:             int32
+            query:
+                type:               string
+    EventsResponse:
+        allOf:
+            -
+                $ref:               '#/definitions/AnalyticsResponse'
+        required:
+            - samples
+            - events
+        properties:
+            samples:
+                type:               integer
+                format:             int64
+            events:
+                type:               array
+                items:
+                    $ref:               '#/definitions/ObjectData'
+    MetricsResponse:
+        allOf:
+            -
+                $ref:               '#/definitions/AnalyticsResponse'
+        required:
+            - fieldType
+            - unit
+            - samples
+            - data
+        properties:
+            fieldType:
+                type:               string
+            unit:
+                type:               string
+            samples:
+                type:               integer
+                format:             int64
+            data:
+                type:               array
+                items:
+                    $ref:               '#/definitions/Bin'
+            labels:
+                $ref:               '#/definitions/StringMap'
+    ValueCountsResponse:
+        allOf:
+            -
+                $ref:               '#/definitions/AnalyticsResponse'
+        required:
+            - data
+        properties:
+            data:
+                type:               array
+                items:
+                    $ref:               '#/definitions/ValueCount'
+            labels:
+                $ref:               '#/definitions/StringMap'
+    Bin:
+        required:
+            - time
+        properties:
+            time:
+                type:               string
+                format:             datetime
+            value:
+                $ref:               '#/definitions/BinValue'
+            counts:
+                $ref:               '#/definitions/LongMap'
+     ValueCount:
+        required:
+            - value
+            - count
+        properties:
+            value:
+                type:               string
+            count:
+                type:               integer
+                format:             int64            
+    LongMap:
+        patternProperties:
+            \w*:
+                type:               integer
+                format:             int64
+    StringMap:
+        patternProperties:
+            \w*:
+                type:               string
+    BinValue:
+        required:
+            - count
+            - sum
+        properties:
+            count:
+                type:               integer
+                format:             int64
+            sum:
+                type:               number
+                format:             double
+    DistinctResponse:
+        allOf:
+            -
+                $ref:               '#/definitions/AnalyticsResponse'
+        required:
+            - values
+            - labels
+        properties:
+            values:
+                type:               array
+                items:
+                    type:               string
+            labels:
+                $ref:               '#/definitions/StringMap'
+#
+#
+#
+parameters:
+    environmentId:
+        name:           X-Environment-Id
+        in:             header
+        type:           string
+        description:    The environment identifier
+        x-global:       true
+    eventType:
+        name:           eventType
+        in:             path
+        type:           string
+        description:    The event type
+        required:       true
+    metric:
+        name:           metric
+        in:             path
+        type:           string
+        description:    The metric to return
+        required:       true
+securityDefinitions:
+    basic:
+        type:           basic
+        description:    Authenticaiton for users via the administration console
+    apiKey:
+        type:           apiKey
+        description:    Authenticaiton for providers (e.g. services, oauth, portal, internal apps)
+        name:           X-Api-Key
+        in:             header
+security:
+    -
+      basic: []
+      apiKey: []
+tags:
+    -
+        name:           events
+        x-type:         resource
+    -
+        name:           metrics
+        x-type:         resource
+externalDocs:
+    url:            http://www.monarchapis.com/docs

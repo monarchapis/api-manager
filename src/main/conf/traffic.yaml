@@ -1,0 +1,176 @@
+name        : traffic
+timezone    : default
+fields      :
+  - 
+    name        : request_id
+    display     : Request ID
+    storeAs     : rid
+    type        : string
+    required    : false
+  - 
+    name        : application_id
+    display     : Application
+    storeAs     : aid
+    type        : string
+    required    : false
+    refersTo    : applications
+  -
+    name        : client_id
+    display     : Client
+    storeAs     : cid
+    type        : string
+    required    : false
+    refersTo    : clients
+  -
+    name        : service_id
+    display     : Service
+    storeAs     : sid
+    type        : string
+    required    : false
+    refersTo    : services
+  -
+    name        : service_version
+    display     : Version
+    storeAs     : ver
+    type        : string
+    required    : false
+  -
+    name        : operation_name
+    display     : Operation
+    storeAs     : oper
+    type        : string
+    required    : true
+  -
+    name        : provider_id
+    display     : Provider
+    storeAs     : pid
+    type        : string
+    required    : true
+    refersTo    : providers
+  -
+    name        : status_code
+    storeAs     : sc
+    type        : code
+    usage       : measure
+    required    : true
+  -
+    name        : error_reason
+    storeAs     : er
+    type        : string
+    usage       : measure
+    required    : true
+  -
+    name        : request_size
+    storeAs     : rqs
+    type        : integer
+    usage       : measure
+    required    : true
+  -
+    name        : response_size
+    storeAs     : rss
+    type        : integer
+    usage       : measure
+    required    : true
+  -
+    name        : response_time
+    storeAs     : rst
+    type        : integer
+    usage       : measure
+    required    : true
+  -
+    name        : cache_hit
+    storeAs     : ch
+    type        : boolean
+    required    : true
+    usage       : measure
+    default     : false
+  -
+    name        : token_id
+    display     : Token ID
+    storeAs     : tid
+    type        : string
+    required    : false
+  -
+    name        : user_id
+    display     : User ID
+    storeAs     : uid
+    type        : string
+    required    : false
+  -
+    name        : host
+    storeAs     : host
+    type        : string
+    required    : true
+  -
+    name        : path
+    storeAs     : path
+    type        : string
+    required    : true
+  -
+    name        : port
+    storeAs     : port
+    type        : code
+    required    : true
+  -
+    name        : verb
+    storeAs     : verb
+    type        : string
+    required    : true
+  -
+    name        : parameters
+    storeAs     : pars
+    type        : object
+    required    : false
+  -
+    name        : headers
+    storeAs     : hdrs
+    type        : object
+    required    : false
+  -
+    name        : client_ip
+    display     : Client IP Address
+    storeAs     : cip
+    type        : string
+    required    : true
+  -
+    name        : user_agent
+    storeAs     : ua
+    type        : string
+    required    : false
+  -
+    name        : latitude
+    storeAs     : lat
+    type        : decimal
+    required    : false
+  -
+    name        : longitude
+    storeAs     : lon
+    type        : decimal
+    required    : false
+
+processors  :
+  -
+    name		: Validator
+  -
+    name        : MaxMind-GeoIP2
+    args        :
+      - client_ip
+
+indexes     :
+  -
+    name        : by_application
+    on          :
+      - application_id
+      - service_id
+      - operation_name
+  -
+    name        : by_client
+    on          :
+      - client_id
+      - service_id
+      - operation_name
+  -
+    name        : by_service_operation
+    on          :
+      - service_id
+      - operation_name

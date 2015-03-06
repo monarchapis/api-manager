@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+realpath () {
+(
+  TARGET_FILE="$1"
+  CHECK_CYGWIN="$2"
+
+  cd "$(dirname "$TARGET_FILE")"
+  TARGET_FILE=$(basename "$TARGET_FILE")
+
+  COUNT=0
+  while [ -L "$TARGET_FILE" -a $COUNT -lt 100 ]
+  do
+      TARGET_FILE=$(readlink "$TARGET_FILE")
+      cd "$(dirname "$TARGET_FILE")"
+      TARGET_FILE=$(basename "$TARGET_FILE")
+      COUNT=$(($COUNT + 1))
+  done
+
+  if [ "$TARGET_FILE" == "." -o "$TARGET_FILE" == ".." ]; then
+    cd "$TARGET_FILE"
+    TARGET_FILEPATH=
+  else
+    TARGET_FILEPATH=/$TARGET_FILE
+  fi
+
+  # make sure we grab the actual windows path, instead of cygwin's path.
+  if [[ "x$CHECK_CYGWIN" == "x" ]]; then
+    echo "$(pwd -P)/$TARGET_FILE"
+  else
+    echo $(cygwinpath "$(pwd -P)/$TARGET_FILE")
+  fi
+)
+}
+
+# This can fix cygwin style /cygdrive paths so we get the
+# windows style paths.
+cygwinpath() {
+  local file="$1"
+  if is_cygwin; then
+    echo $(cygpath -w $file)
+  else
+    echo $file
+  fi
+}
+
+if type -p jar &> /dev/null ; then
+    _jar=jar
+elif [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/jar" ]];  then
+    _jar="$JAVA_HOME/bin/jar"
+else
+    echo "Could not find the jar command."
+    exit -1
+fi
+
+declare -r real_script_path="$(realpath "$0")"
+declare -r app_home="$(realpath "$(dirname "$real_script_path")")"
+declare -r monarch_home="$(echo ${app_home} | sed -e 's/\/bin$//g')"
+
+if [ -d "${monarch_home}/tmp" ]; then
+  rm -rf "${monarch_home}/tmp"
+fi
+
+cp -R "${monarch_home}/webapp" "${monarch_home}/tmp"
+mkdir "${monarch_home}/tmp/WEB-INF/lib"
+cp "${monarch_home}/lib/"*.jar "${monarch_home}/tmp/WEB-INF/lib"
+rm -f "${monarch_home}/tmp/WEB-INF/lib/"org.eclipse.jetty.*
+
+cd "${monarch_home}/tmp"
+eval "$_jar cf \"${monarch_home}/api-manager.war\" ."
+
+if [ $? -ne 0 ]; then
+    echo "Failed to create WAR"
+else
+    echo "Created ${monarch_home}/api-manager.war"
+fi
+
+cd "${monarch_home}"
+
+rm -Rf "${monarch_home}/tmp"

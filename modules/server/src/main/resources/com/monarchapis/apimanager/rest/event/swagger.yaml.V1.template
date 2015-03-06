@@ -1,0 +1,92 @@
+swagger: '2.0'
+info:
+    title:          Event V1 API
+    description:    This interface allows for custom operations to be performed inside Monarch
+    termsOfService: http://monarchapis.com/terms/
+    contact: 
+        name:           Monarch Support
+        url:            http://www.monarchapis.com/support
+        email:          support@monarchapis.com
+    license: 
+        name:           Apache 2.0
+        url:            http://www.apache.org/licenses/LICENSE-2.0.html
+    version:        1.0.0
+host:           ${host}
+basePath:       ${context}/event/v1
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+    /{eventType}:
+        post: 
+            tags: 
+                - events
+            summary:        Sends an event to a custom event processor
+            description:    TODO
+            operationId:    processEvent
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/eventType'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema: 
+                        $ref: '#/definitions/ObjectData'
+            responses:
+                200:
+                    description:    The successful event response
+                    schema:
+                        $ref: '#/definitions/ObjectData'
+#
+#
+#
+definitions:
+    ObjectData:
+        additionalProperties:       true
+    
+#
+#
+#
+parameters:
+    environmentId:
+        name:           X-Environment-Id
+        in:             header
+        type:           string
+        description:    The environment identifier
+        x-global:       true
+    eventType:
+        name:           eventType
+        in:             path
+        type:           string
+        description:    The event type
+        required:       true
+securityDefinitions:
+    basic:
+        type:           basic
+        description:    Authenticaiton for users via the administration console
+    apiKey:
+        type:           apiKey
+        description:    Authenticaiton for providers (e.g. services, oauth, portal, internal apps)
+        name:           X-Api-Key
+        in:             header
+security:
+    -
+      basic: []
+      apiKey: []
+tags:
+    -
+        name:           events
+        x-type:         resource
+    -
+        name:           metrics
+        x-type:         resource
+externalDocs:
+    url:            http://www.monarchapis.com/docs

@@ -1,0 +1,86 @@
+swagger: '2.0'
+info:
+    title:          Open V1 API
+    description:    This interface provides access to general purpose operations that should not require authentication
+    termsOfService: http://monarchapis.com/terms/
+    contact: 
+        name:           Monarch Support
+        url:            http://www.monarchapis.com/support
+        email:          support@monarchapis.com
+    license: 
+        name:           Apache 2.0
+        url:            http://www.apache.org/licenses/LICENSE-2.0.html
+    version:        1.0.0
+host:           ${host}
+basePath:       ${context}/open/v1
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+    /serviceInfo:
+        get:
+            tags:
+                - open
+            summary:        Returns information, such as reference identifiers, required by the service to operate
+            description:    TODO
+            operationId:    getServiceInfo
+            parameters:
+                -
+                    name:               environmentName
+                    in:                 query
+                    type:               string
+                    description:        The environment name to lookup
+                    required:           true
+                -
+                    name:               serviceName
+                    in:                 query
+                    type:               string
+                    description:        The service name to lookup
+                    required:           false
+                -
+                    name:               providerKey
+                    in:                 query
+                    type:               string
+                    description:        The provider key to lookup
+                    required:           false
+            responses:
+                200:
+                    description:    The events that match the given criteria
+                    schema:
+                        $ref:               '#/definitions/ServiceInfo'
+#
+#
+#
+definitions:
+    ServiceInfo:
+        required:
+            - environment
+        properties:
+            environment:
+                $ref:           '#/definitions/Reference'
+            service:
+                $ref:           '#/definitions/Reference'
+            provider:
+                $ref:           '#/definitions/Reference'
+    Reference:
+        required:
+            - id
+            - name
+        properties:
+            id:
+                type:           string
+            name:
+                type:           string
+#
+#
+#
+tags:
+    -
+        name:           open
+        x-type:         resource
+externalDocs:
+    url:            http://www.monarchapis.com/docs

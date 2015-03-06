@@ -1,0 +1,1 @@
+<div id="activity-graph"></div>

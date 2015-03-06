@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	
+	<bean
+		id="encryptionManager"
+		class="com.monarchapis.apimanager.service.AESEncryptionManager"
+		c:base64Key="${encrpytion.base64Key}" />
+	
+	<bean
+		id="requestHasherRegistry"
+		class="com.monarchapis.apimanager.security.RequestHasherRegistry">
+		<constructor-arg name="hashers">
+			<list>
+				<bean class="com.monarchapis.apimanager.security.HawkV1RequestHasher" />
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<bean
+		id="authenticationProcessor"
+		class="com.monarchapis.apimanager.security.AuthenticationProcessorImpl">
+		<constructor-arg name="accessTokenTypes">
+			<set>
+				<value>bearer</value>
+				<value>hmac</value>
+			</set>
+		</constructor-arg>
+	</bean>
+	
+	<context:component-scan base-package="com.monarchapis.apimanager.security" />
+
+	<bean
+		id="versionExtractor"
+		class="com.monarchapis.apimanager.security.BasicVersionExtractor" />
+
+	<bean
+		id="serviceManager"
+		class="com.monarchapis.apimanager.service.ServiceManagerImpl">
+		<constructor-arg name="authorizationCodeTokenTypes">
+			<set>
+				<value>authorization</value>
+			</set>
+		</constructor-arg>
+	</bean>
+	
+	
+	
+	<!--
+		API Key Extractors / Registry
+	-->
+	<bean
+		id="apiKeyExtractorRegistry"
+		class="com.monarchapis.apimanager.security.StringExtractorRegistry">
+		<constructor-arg>
+			<list>
+				<bean class="com.monarchapis.apimanager.security.HeaderApiKeyExtractor">
+					<constructor-arg>
+				        <list>
+				            <value>X-Api-Key</value>
+				            <value>Api-Key</value>
+				            <value>X-ApiKey</value>
+				            <value>ApiKey</value>
+				            <value>X-Client-Id</value>
+				            <value>Client-Id</value>
+				        </list>
+				    </constructor-arg>
+				</bean>
+				<bean class="com.monarchapis.apimanager.security.QueryStringApiKeyExtractor">
+					<constructor-arg>
+				        <list>
+				            <value>api-key</value>
+				            <value>api_key</value>
+				            <value>apikey</value>
+				            <value>client-id</value>
+				            <value>client_id</value>
+				            <value>clientid</value>
+				        </list>
+				    </constructor-arg>
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+	
+	<!--
+		Access Token Extractors / Registry
+	-->
+	<bean
+		id="accessTokenExtractorRegistry"
+		class="com.monarchapis.apimanager.security.StringExtractorRegistry">
+		<constructor-arg>
+			<list>
+				<bean class="com.monarchapis.apimanager.security.BearerTokenExtractor" />
+				<bean class="com.monarchapis.apimanager.security.QueryStringApiKeyExtractor">
+					<constructor-arg>
+				        <list>
+				            <value>accesstoken</value>
+				            <value>access_token</value>
+				        </list>
+				    </constructor-arg>
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+	
+	<!--
+		Authenticator Registry
+	-->
+	<bean
+		id="authenticatorRegistry"
+		class="com.monarchapis.apimanager.security.AuthenticatorRegistry">
+		<constructor-arg name="authenticators">
+			<list>
+				<!-- Ordered from strongest to weakest -->
+				<bean class="com.monarchapis.apimanager.security.HawkV1Authenticator" />
+				<bean class="com.monarchapis.apimanager.security.SimpleAuthenticator" />
+			</list>
+		</constructor-arg>
+	</bean>
+	
+	<!--
+		Policy Registry
+	-->
+	<bean
+		id="policyRegistry"
+		class="com.monarchapis.apimanager.security.PolicyRegistry" />
+	
+	<!-- Add custom policies here -->
+	
+	<!--
+		Claim Source Registry
+	-->
+	<bean
+		id="claimSourceRegistry"
+		class="com.monarchapis.apimanager.security.ClaimSourceRegistry" />
+	
+	<!-- Add custom claim sources here -->
+</beans>

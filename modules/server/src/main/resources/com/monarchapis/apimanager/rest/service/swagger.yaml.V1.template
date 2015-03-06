@@ -1,0 +1,636 @@
+swagger: '2.0'
+info:
+    title:          Service V1 API
+    description:    This is the interface used by service providers to enable infrastructure tasks.
+    termsOfService: http://monarchapis.com/terms/
+    contact: 
+        name:           Monarch Support
+        url:            http://www.monarchapis.com/support
+        email:          support@monarchapis.com
+    license: 
+        name:           Apache 2.0
+        url:            http://www.apache.org/licenses/LICENSE-2.0.html
+    version:        1.0.0
+host:           ${host}
+basePath:       ${context}/service/v1
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+    /requests/authenticate:
+        post: 
+            tags: 
+                - security
+            summary:        Authenticate an API request
+            description:    TODO
+            operationId:    authenticateRequest
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/AuthenticationRequest'
+            responses:
+                200:
+                    description:    The authentication response with context information
+                    schema:
+                        $ref: '#/definitions/AuthenticationResponse'
+    /authorizations/details:
+        post: 
+            tags: 
+                - security
+            summary:        Returns the client, application, & permissions relevant for an authorization
+            description:    TODO
+            operationId:    getAuthorizationDetails
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/AuthorizationRequest'
+            responses:
+                200:
+                    description:    The authorization details
+                    schema:
+                        $ref: '#/definitions/AuthorizationDetails'
+    /clients/authenticate:
+        post: 
+            tags: 
+                - security
+            summary:        Authenticates a client
+            description:    TODO
+            operationId:    authenticateClient
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/ClientAuthenticationRequest'
+            responses:
+                200:
+                    description:    The client is valid
+    # TOKENS
+    /tokens:
+        post: 
+            tags: 
+                - tokens
+            summary:        Create a new token
+            description:    TODO
+            operationId:    createToken
+            x-resource-operation: create
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/TokenRequest'
+            responses:
+                200:
+                    description:    The created token
+                    schema: 
+                        $ref: '#/definitions/Token'
+        get: 
+            tags: 
+                - tokens
+            summary:        Load a token
+            description:    TODO
+            operationId:    loadClient
+            x-resource-operation: load
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               apiKey
+                    in:                 query
+                    type:               string
+                    description:        The API key
+                    required:           true
+                -
+                    name:               token
+                    in:                 query
+                    type:               string
+                    description:        The access token
+                    required:           false
+                -
+                    name:               refresh
+                    in:                 query
+                    type:               string
+                    description:        The refresh token
+                    required:           false
+                -
+                    name:               callbackUri
+                    in:                 query
+                    type:               string
+                    description:        The callback URI
+                    required:           false
+            responses: 
+                200: 
+                    description:    TODO
+                    schema: 
+                        $ref: '#/definitions/Token'
+        delete: 
+            tags: 
+                - tokens
+            summary:        Revokes a token
+            description:    TODO
+            operationId:    deleteClient
+            x-resource-operation: revoke
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               apiKey
+                    in:                 query
+                    type:               string
+                    description:        The API key
+                    required:           true
+                -
+                    name:               token
+                    in:                 query
+                    type:               string
+                    description:        The access token
+                    required:           false
+                -
+                    name:               callbackUri
+                    in:                 query
+                    type:               string
+                    description:        The callback URI
+                    required:           false
+            responses:
+                204:
+                    description:    The deleted client
+    /permissions/messages:
+        post: 
+            tags: 
+                - security
+            summary:        Gets messages that pertain to permissions requests by an application
+            description:    TODO
+            operationId:    getPermissionMessages
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/PermissionMessagesRequest'
+            responses:
+                200:
+                    description:    The list of messages
+                    schema:
+                        $ref: '#/definitions/MessageList'
+#
+#
+#
+definitions:
+    Extended:
+        additionalProperties:   true
+    AuthenticationRequest:
+        required:
+            - protocol
+            - method
+            - host
+            - port
+            - path
+            - ipAddress
+        properties:
+            protocol:
+                type:           string
+            method:
+                type:           string
+            host:
+                type:           string
+            port:
+                type:           integer
+                format:         int32
+            path:
+                type:           string
+            querystring:
+                type:           string
+            headers:
+                $ref:           '#/definitions/Headers'
+            ipAddress:
+                type:           string
+            payloadHashes:
+                $ref:           '#/definitions/PayloadHashes'
+            requestWeight:
+                type:           number
+                format:         float
+            performAuthorization:
+                type:           boolean
+    Headers:
+        patternProperties:
+            \w*:
+                type:           array
+                items:
+                    type:           string
+    PayloadHashes:
+        patternProperties:
+            \w*:
+                $ref:           '#/definitions/StringMap'
+    StringMap:
+        patternProperties:
+            \w*:
+                type:           string
+    AuthenticationResponse:
+        required:
+            - code
+        properties:
+            code:
+                type:           integer
+                format:         int32
+            reason:
+                type:           string
+            message:
+                type:           string
+            developerMessage:
+                type:           string
+            errorCode:
+                type:           string
+            responseHeaders:
+                type:           array
+                items:
+                    $ref:           '#/definitions/HttpHeader'
+            vars:
+                $ref:           '#/definitions/VariableContext'
+            context:
+                $ref:           '#/definitions/ApiContext'
+    HttpHeader:
+        required:
+            - name
+            - value
+        properties:
+            name:
+                type:           string
+            value:
+                type:           string
+    VariableContext:
+        required:
+            - providerId
+            - serviceId
+            - operation
+        properties:
+            providerId:
+                type:           string
+            serviceId:
+                type:           string
+            serviceVersion:
+                type:           string
+            operation:
+                type:           string
+            pathParameters:
+                $ref:           '#/definitions/StringMap'
+    ApiContext:
+        required:
+            - correlationId
+            - application
+            - client
+        properties:
+            correlationId:
+                type:           string
+            application:
+                $ref:           '#/definitions/ApplicationContext'
+            client:
+                $ref:           '#/definitions/ClientContext'
+            token:
+                $ref:           '#/definitions/TokenContext'
+            principal:
+                $ref:           '#/definitions/PrincipalContext'
+            provider:
+                $ref:           '#/definitions/ProviderContext'
+    ApplicationContext:
+        required:
+            - id
+        properties:
+            id:
+                type:           string
+            name:
+                type:           string
+            extended:
+                $ref:           '#/definitions/Extended'
+    ClientContext:
+        required:
+            - id
+            - label
+            - permissions
+        properties:
+            id:
+                type:           string
+            label:
+                type:           string
+            permissions:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+            extended:
+                $ref:           '#/definitions/Extended'
+    TokenContext:
+        required:
+            - id
+            - permissions
+        properties:
+            id:
+                type:           string
+            permissions:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+            extended:
+                $ref:           '#/definitions/Extended'
+    PrincipalContext:
+        required:
+            - id
+            - claims
+        properties:
+            id:
+                type:           string
+            context:
+                type:           string
+            claims:
+                $ref:           '#/definitions/ClaimsMap'
+    ClaimsMap:
+        patternProperties:
+            \w*:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+    ProviderContext:
+        required:
+            - id
+            - label
+        properties:
+            id:
+                type:           string
+            label:
+                type:           string
+    AuthorizationRequest:
+        required:
+            - authorizationScheme
+            - apiKey
+            - permissions
+        properties:
+            authorizationScheme:
+                type:           string
+            apiKey:
+                type:           string
+            callbackUri:
+                type:           string
+            permissions:
+                type:           array
+                items:
+                    type:           string
+    AuthorizationDetails:
+        required:
+            - client
+            - application
+            - permissions
+        properties:
+            client:
+                $ref:           '#/definitions/ClientDetails'
+            application:
+                $ref:           '#/definitions/ApplicationDetails'
+            permissions:
+                type:           array
+                items:
+                    $ref:           '#/definitions/PermissionDetails'
+    ClientDetails:
+        required:
+            - id
+            - apiKey
+            - autoAuthorize
+            - allowWebView
+            - allowPopup
+        properties:
+            id:
+                type:           string
+            apiKey:
+                type:           string
+            expiration:
+                type:           integer
+                format:         int64
+            autoAuthorize:
+                type:           boolean
+            allowWebView:
+                type:           boolean
+            allowPopup:
+                type:           boolean
+    ApplicationDetails:
+        required:
+            - id
+            - name
+            - applicationUrl
+            - companyName
+            - companyUrl
+        properties:
+            id:
+                type:           string
+            name:
+                type:           string
+            description:
+                type:           string
+            applicationUrl:
+                type:           string
+            applicationImageUrl:
+                type:           string
+            companyName:
+                type:           string
+            companyUrl:
+                type:           string
+            companyImageUrl:
+                type:           string
+    PermissionDetails:
+        reqiured:
+            - name
+        properties:
+            name:
+                type:           string
+            flags:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+    ClientAuthenticationRequest:
+        required:
+            - authorizationScheme
+            - apiKey
+        properties:
+            authorizationScheme:
+                type:           string
+            apiKey:
+                type:           string
+            sharedSecret:
+                type:           string
+    PermissionMessagesRequest:
+        required:
+            - locales
+            - permissions
+        properties:
+            locales:
+                type:           array
+                items:
+                    $ref:           '#/definitions/LocaleInfo'
+            permissions:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+    LocaleInfo:
+        required:
+            - language
+        properties:
+            language:
+                type:           string
+            country:
+                type:           string
+            variant:
+                type:           string
+    MessageList:
+        required:
+            - messages
+        properties:
+            messages:
+                type:           array
+                items:
+                    $ref:           '#/definitions/MessageDetails'
+    MessageDetails:
+        required:
+            - format
+            - content
+        properties:
+            format:
+                type:           string
+            content:
+                type:           string
+            children:
+                type:           array
+                items:
+                    #type:           string
+                    $ref:           '#/definitions/MessageDetails'
+    # TOKENS
+    TokenRequest:
+        required:
+            - authorizationScheme
+            - apiKey
+            - grantType
+            - tokenType
+            - permissions
+            - uri
+            - userId
+        properties:
+            authorizationScheme:
+                type:           string
+            apiKey:
+                type:           string
+            grantType:
+                type:           string
+            tokenType:
+                type:           string
+            permissions:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+            state:
+                type:           string
+            uri:
+                type:           string
+            userId:
+                type:           string
+            userContext:
+                type:           string
+            extended:
+                $ref:           '#/definitions/Extended'
+    Token:
+        required:
+            - id
+            - token
+            - grantType
+            - tokenType
+            - permissions
+            - userId
+        properties:
+            id:
+                type:           string
+            token:
+                type:           string
+            refreshToken:
+                type:           string
+            expiresIn:
+                type:           integer
+                format:         int64
+            grantType:
+                type:           string
+            tokenType:
+                type:           string
+            permissions:
+                type:           array
+                items:
+                    type:           string
+                uniqueItems:    true
+            state:
+                type:           string
+            uri:
+                type:           string
+            userId:
+                type:           string
+            userContext:
+                type:           string
+            extended:
+                $ref:           '#/definitions/Extended'
+#
+#
+#
+parameters:
+    environmentId:
+        name:           X-Environment-Id
+        in:             header
+        type:           string
+        description:    The environment identifier
+        x-global:       true
+securityDefinitions:
+    basic:
+        type:           basic
+        description:    Authenticaiton for users via the administration console
+    apiKey:
+        type:           apiKey
+        description:    Authenticaiton for providers (e.g. services, oauth, portal, internal apps)
+        name:           X-Api-Key
+        in:             header
+security:
+    -
+      basic: []
+      apiKey: []
+tags:
+    -
+        name:           security
+        x-type:         resource
+    -
+        name:           tokens
+        x-type:         resource
+externalDocs:
+    url:            http://www.monarchapis.com/docs

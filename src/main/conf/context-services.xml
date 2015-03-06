@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- Basic caching config -->
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+		<property name="cacheManager" ref="ehcache"/>
+	</bean>
+
+	<bean id="ehcache" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="file:#{systemProperties['monarch.config']}/ehcache.xml"/>
+		<property name="shared" value="true"/>
+	</bean>
+
+	<bean
+		id="mongoDbConnectionManager"
+		class="com.monarchapis.apimanager.service.mongodb.BasicMongoDBConnectionManager"
+		c:servers="${mongoDb.serverAddresses}"
+		c:credentials="${mongoDb.credentials}"
+		c:systemDatabase="${mongoDb.systemDatabase}" />
+
+	<!--
+	 - Default Authentication: Users are authenticated against the API Manager's system database
+	 -->
+	<bean
+		id="mongoDbAuthenticationService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBAuthenticationService" />
+
+	<!--
+	 - LDAP Authentication: Specify the configuration values in monarch-cluster.properties
+	<bean
+		id="ldapAuthenticationService"
+		class="com.monarchapis.apimanager.service.ldap.LdapAuthenticationService">
+		<constructor-arg name="ldapURL" value="${auth.ldap.url}" />
+		<constructor-arg name="authMethod" value="${auth.ldap.authMethod}" />
+		<constructor-arg name="userDN" value="${auth.ldap.userDN}" />
+		<constructor-arg name="uidAttribute" value="${auth.ldap.uidAttribute}" />
+		<constructor-arg name="baseDN" value="${auth.ldap.baseDN}" />
+		<constructor-arg name="useSSL" value="${auth.ldap.useSSL}" />
+		<constructor-arg name="firstNameAttribute" value="${auth.ldap.firstNameAttribute}" />
+		<constructor-arg name="lastNameAttribute" value="${auth.ldap.lastNameAttribute}" />
+		<constructor-arg name="idAttribute" value="${auth.ldap.idAttribute}" />
+		<constructor-arg name="idIsBinary" value="${auth.ldap.idIsBinary}" />
+		<constructor-arg name="userGroups" value="${auth.ldap.userGroups}" />
+		<constructor-arg name="adminGroups" value="${auth.ldap.adminGroups}" />
+	</bean>
+	-->
+
+	<bean
+		id="mongoDbUserService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBUserService" />
+
+	<bean
+		id="mongoDbRoleService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBRoleService" />
+
+	<bean
+		id="mongoDbEnvironmentService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBEnvironmentService" />
+
+	<bean
+		id="mongoDbApplicationService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBApplicationService" />
+
+	<bean
+		id="mongoDbClientService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBClientService" />
+
+	<bean
+		id="mongoDbTokenService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBTokenService" />
+
+	<bean
+		id="mongoDbDeveloperService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBDeveloperService" />
+
+	<bean
+		id="mongoDbAppDeveloperService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBAppDeveloperService" />
+
+	<bean
+		id="mongoDbServiceService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBServiceService" />
+
+	<bean
+		id="mongoDbPlanService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBPlanService" />
+
+	<bean
+		id="mongoDbPermissionService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBPermissionService" />
+
+	<bean
+		id="mongoDbMessageService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBMessageService" />
+
+	<bean
+		id="mongoDbProviderService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBProviderService" />
+
+	<bean
+		id="mongoDbLogService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBLogService" />
+
+	<bean
+		id="mongoDbRateLimitService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBRateLimitService">
+		<constructor-arg ref="mongoDbConnectionManager" />
+		<constructor-arg value="${global.timezoneId}" />
+	</bean>
+
+	<bean
+		id="mongoDbPrincipalProfileService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBPrincipalProfileService" />
+
+	<bean
+		id="mongoDbPrincipalClaimsService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBPrincipalClaimsService" />
+	
+	<!-- BEGIN: Analytics configuration -->
+	<bean
+		id="analyticsConfigurationFactory"
+		class="com.monarchapis.apimanager.analytics.AnalyticsConfigurationFactory">
+		<constructor-arg>
+			<list>
+				<value>file:#{systemProperties['monarch.config']}/traffic.yaml</value>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<!-- Analytics: Event Processors -->
+	<bean
+		id="analyticsEventProcessorRegistry"
+		class="com.monarchapis.apimanager.analytics.EventProcessorRegistry" />
+
+	<bean
+		id="eventValidator"
+		class="com.monarchapis.apimanager.analytics.EventValidator" />
+	
+	<!-- MaxMind beans -->
+	<bean
+		id="maxMindGeoIP2DatabaseReaderFactory"
+		class="com.monarchapis.apimanager.analytics.maxmind.MaxMindGeoIP2DatabaseReaderFactory">
+		<constructor-arg value="file:#{systemProperties['monarch.config']}/GeoLite2-City.mmdb" />
+	</bean>
+	<bean
+		id="maxMindGeoIP2EventProcessor"
+		class="com.monarchapis.apimanager.analytics.maxmind.MaxMindGeoIP2EventProcessor">
+		<constructor-arg ref="maxMindGeoIP2DatabaseReaderFactory" />
+	</bean>
+	<!-- /MaxMind beans -->
+	
+	<!-- Add custom event processors here -->
+
+	<bean
+		id="mongoDbAnalyticsService"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBAnalyticsService">
+		<constructor-arg ref="mongoDbConnectionManager" />
+		<constructor-arg ref="analyticsConfigurationFactory" />
+	</bean>
+	<!-- END: Analytics configuration -->
+
+	<!-- Command Processor Registry & Command Processors -->
+	<context:component-scan base-package="com.monarchapis.apimanager.command" />
+
+	<bean
+		id="mongoDbDatabaseInitializer"
+		class="com.monarchapis.apimanager.service.mongodb.MongoDBInitializerRegistry" />
+</beans>

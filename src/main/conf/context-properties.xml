@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	<!-- -->
+	<!-- Configuration for encryptor, based on environment variables. -->
+	<!-- -->
+	<!-- In this example, the encryption password will be read from an -->
+	<!-- environment variable called "ENC_PWD" which, once -->
+	<!-- the application has been started, could be safely unset. -->
+	<!-- -->
+	<bean id="pbeFileConfiguration"
+		class="com.monarchapis.apimanager.util.AutoInitializingPBEConfig">
+		<property name="algorithm" value="PBEWithMD5AndTripleDES" />
+		<property name="passwordFile" value="file:#{systemProperties['monarch.config']}/.pbekey" />
+	</bean>
+
+	<!-- -->
+	<!-- The will be the encryptor used for decrypting configuration values. -->
+	<!-- -->
+	<bean id="configurationEncryptor" class="org.jasypt.encryption.pbe.StandardPBEStringEncryptor">
+		<property name="config" ref="pbeFileConfiguration" />
+	</bean>
+
+	<!-- -->
+	<!-- The EncryptablePropertyPlaceholderConfigurer will read the -->
+	<!-- .properties files and make their values accessible as ${var}. -->
+	<!-- -->
+	<!-- Our "configurationEncryptor" bean (which implements -->
+	<!-- org.jasypt.encryption.StringEncryptor) is set as a constructor arg. -->
+	<!-- -->
+	<bean id="propertyConfigurer"
+		class="com.monarchapis.apimanager.util.AutoEncryptingPropertyPlaceholderConfigurer">
+		<constructor-arg ref="configurationEncryptor" />
+		<property name="locations">
+			<list>
+				<value>file:#{systemProperties['monarch.config']}/monarch-cluster.properties</value>
+				<value>file:#{systemProperties['monarch.config']}/monarch-node.properties</value>
+			</list>
+		</property>
+	</bean>
+</beans>

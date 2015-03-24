@@ -690,7 +690,7 @@ case class Developer(
   @BeanProperty region: Option[String] = None,
   @BeanProperty postalCode: Option[String] = None,
   @BeanProperty countryCode: Option[String] = None,
-  @BeanProperty registrationIp: String = null,
+  @BeanProperty registrationIp: Option[String] = None,
   @BeanProperty extended: Map[String, Object] = Map(),
   @BeanProperty externalId: Option[String] = None,
   @BeanProperty createdBy: String = UserContext.current,
@@ -714,7 +714,7 @@ case class Developer(
   def withRegion(region: Option[String]) = copy(region = region)
   def withPostalCode(postalCode: Option[String]) = copy(postalCode = postalCode)
   def withCountryCode(countryCode: Option[String]) = copy(countryCode = countryCode)
-  def withRegistrationIp(registrationIp: String) = copy(registrationIp = registrationIp)
+  def withRegistrationIp(registrationIp: Option[String] = None) = copy(registrationIp = registrationIp)
   def withExtended(extended: Map[String, Object]) = copy(extended = extended)
   def withExternalId(externalId: Option[String]) = copy(externalId = externalId)
   def withRole(role: Option[String]) = copy(role = role)

@@ -77,7 +77,7 @@ class MongoDBDeveloperService @Inject() (
     .field("region", "region", FieldType.CI_STRING, false, accessor = (e) => e.region.orNull)
     .field("postalCode", "postalCode", FieldType.CI_STRING, false, accessor = (e) => e.postalCode.orNull)
     .field("countryCode", "countryCode", FieldType.CI_STRING, false, accessor = (e) => e.countryCode.orNull)
-    .field("registrationIp", "registrationIp", FieldType.CS_STRING, true, accessor = (e) => e.registrationIp)
+    .field("registrationIp", "registrationIp", FieldType.CS_STRING, false, accessor = (e) => e.registrationIp)
     .field("extended", "extended", FieldType.OTHER, false, accessor = (e) => {
       val builder = MongoDBObject.newBuilder[String, AnyRef]
       if (e.extended != null) e.extended foreach {
@@ -111,7 +111,7 @@ class MongoDBDeveloperService @Inject() (
       region = optional[String](o.get("region")),
       postalCode = optional[String](o.get("postalCode")),
       countryCode = optional[String](o.get("countryCode")),
-      registrationIp = expect[String](o.get("registrationIp")),
+      registrationIp = optional[String](o.get("registrationIp")),
       extended = map(o.getAs[DBObject]("extended")),
       externalId = optional[String](o.get("externalId")),
       createdBy = expect[String](o.get("createdBy")),

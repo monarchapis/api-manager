@@ -66,7 +66,7 @@ class UriEventQueryConverter(shortener: StringShortener) extends EventQueryConve
         StringEscapeUtils.unescapeJava(string.substring(1, string.length - 1))
       } else if (ctx.NULL != null) {
         null
-      } else throw new IllegalStateException("could not extract value")
+      }else throw new IllegalStateException("could not extract value")
     }
   }
 

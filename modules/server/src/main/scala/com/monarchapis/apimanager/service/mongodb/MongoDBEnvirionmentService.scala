@@ -68,7 +68,7 @@ class MongoDBEnvironmentService @Inject() (
   protected val fieldMap = MongoSchema[Environment]
     .field("id", "_id", FieldType.IDENTIFIER, true, updateable = false, accessor = (e) => e.id)
     .field("name", "name", FieldType.CI_STRING, true, accessor = (e) => e.name)
-    .field("description", "description", FieldType.CS_STRING, true, accessor = (e) => e.description.orNull)
+    .field("description", "description", FieldType.CS_STRING, false, accessor = (e) => e.description.orNull)
     .field("systemDatabase", "systemDatabase", FieldType.CS_STRING, true, accessor = (e) => e.systemDatabase)
     .field("analyticsDatabase", "analyticsDatabase", FieldType.CS_STRING, true, accessor = (e) => e.analyticsDatabase)
 

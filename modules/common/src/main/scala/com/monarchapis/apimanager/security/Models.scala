@@ -210,10 +210,10 @@ case class CreateTokenRequest(
   @NotNull @BeanProperty apiKey: String,
   @NotNull @BeanProperty grantType: String,
   @NotNull @BeanProperty tokenType: String,
-  @NotNull @BeanProperty permissions: Set[String],
-  @BeanProperty state: Option[String],
-  @NotNull @BeanProperty uri: String,
-  @NotNull @BeanProperty userId: String,
+  @NotNull @BeanProperty permissions: Set[String] = Set(),
+  @BeanProperty state: Option[String] = None,
+  @NotNull @BeanProperty uri: Option[String] = None,
+  @NotNull @BeanProperty userId: Option[String] = None,
   @BeanProperty userContext: Option[String] = None,
   @BeanProperty extended: Map[String, Object] = Map())
 
@@ -225,14 +225,14 @@ case class GetTokenRequest(
 case class TokenDetails(
   @BeanProperty id: String,
   @BeanProperty token: String,
-  @BeanProperty refreshToken: Option[String],
-  @BeanProperty expiresIn: Option[Long],
+  @BeanProperty refreshToken: Option[String] = None,
+  @BeanProperty expiresIn: Option[Long] = None,
   @BeanProperty grantType: String,
   @BeanProperty tokenType: String,
-  @BeanProperty permissions: Set[String],
-  @BeanProperty state: Option[String],
-  @BeanProperty uri: Option[String],
-  @BeanProperty userId: String,
+  @BeanProperty permissions: Set[String] = Set(),
+  @BeanProperty state: Option[String] = None,
+  @BeanProperty uri: Option[String] = None,
+  @BeanProperty userId: Option[String] = None,
   @BeanProperty userContext: Option[String] = None,
   @BeanProperty extended: Map[String, Object] = Map())
 

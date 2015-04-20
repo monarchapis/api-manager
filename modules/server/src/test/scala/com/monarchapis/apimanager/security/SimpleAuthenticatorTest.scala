@@ -43,7 +43,7 @@ class SimpleAuthenticatorTest extends FlatSpec with Matchers with MockitoSugar {
   when(testKey.getAuthenticatorConfiguration("simple")).thenReturn(Some(config))
 
   when(testToken.clientId).thenReturn("1234")
-  when(testToken.userId).thenReturn("jdoe")
+  when(testToken.userId).thenReturn(Some("jdoe"))
 
   val keyStore = mock[ClientService]
   when(keyStore.findByApiKey("test")).thenReturn(Some(testKey))

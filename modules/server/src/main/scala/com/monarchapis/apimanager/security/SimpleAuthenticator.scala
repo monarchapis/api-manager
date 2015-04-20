@@ -90,7 +90,7 @@ class SimpleAuthenticator @Inject() (
           client = Some(key),
           token = token,
           principal = token match {
-            case Some(token) => Some(token.userId)
+            case Some(token) => token.userId
             case _ => None
           }))
       }

@@ -1,13 +1,12 @@
 swagger: '2.0'
 info:
     title:          Event V1 API
-    description:    This interface allows for custom operations to be performed inside Monarch
-    termsOfService: http://monarchapis.com/terms/
-    contact: 
+    description:    This interface allows for custom operations to be performed inside Monarch.
+    contact:
         name:           Monarch Support
         url:            http://www.monarchapis.com/support
         email:          support@monarchapis.com
-    license: 
+    license:
         name:           Apache 2.0
         url:            http://www.apache.org/licenses/LICENSE-2.0.html
     version:        1.0.0

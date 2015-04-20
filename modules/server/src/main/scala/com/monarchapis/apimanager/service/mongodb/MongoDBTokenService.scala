@@ -91,8 +91,8 @@ class MongoDBTokenService @Inject() (
     .field("fromToken", "fromToken", FieldType.ENC_STRING, false, accessor = (e) => e.fromToken.orNull)
     .field("permissionIds", "permissionIds", FieldType.OTHER, false, accessor = (e) => toList(e.permissionIds))
     .field("state", "state", FieldType.CS_STRING, false, accessor = (e) => e.state.orNull)
-    .field("uri", "uri", FieldType.CS_STRING, false, accessor = (e) => e.uri)
-    .field("userId", "userId", FieldType.ENC_STRING, false, accessor = (e) => e.userId)
+    .field("uri", "uri", FieldType.CS_STRING, false, accessor = (e) => e.uri.orNull)
+    .field("userId", "userId", FieldType.ENC_STRING, false, accessor = (e) => e.userId.orNull)
     .field("userContext", "userContext", FieldType.ENC_STRING, false, accessor = (e) => e.userContext.orNull)
     .field("extended", "extended", FieldType.OTHER, false, accessor = (e) => toObject(e.extended))
     .field("externalId", "externalId", FieldType.CS_STRING, false, accessor = (e) => NotSet.check(e.externalId.orNull))
@@ -163,7 +163,10 @@ class MongoDBTokenService @Inject() (
       permissionIds = set[String](o.getAs[MongoDBList]("permissionIds")),
       state = optional[String](o.get("state")),
       uri = optional[String](o.get("uri")),
-      userId = encryptionManager.decryptAsString(expect[String](o.get("userId"))),
+      userId = optional[String](o.get("userId")) match {
+        case Some(s) => Some(encryptionManager.decryptAsString(s))
+        case _ => None
+      },
       userContext = optional[String](o.get("userContext")) match {
         case Some(s) => Some(encryptionManager.decryptAsString(s))
         case _ => None

@@ -60,9 +60,13 @@ class MongoDBPrincipalClaimsService @Inject() (
     .field("inherits", "inherits", FieldType.OTHER, false, accessor = (e) => toList(e.inherits))
     .field("claims", "claims", FieldType.OTHER, false, accessor = (e) => {
       val builder = MongoDBObject.newBuilder[String, MongoDBList]
-      e.claims foreach {
-        case (key, values) => builder += key -> toList(values)
+
+      if (e.claims != null) {
+        e.claims foreach {
+          case (key, values) => builder += key -> toList(values)
+        }
       }
+
       builder.result
     }, extras = (set, e) => {
       if (e.inherits != null) {

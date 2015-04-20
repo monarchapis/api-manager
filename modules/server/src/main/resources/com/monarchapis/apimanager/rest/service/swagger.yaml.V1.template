@@ -2,12 +2,11 @@ swagger: '2.0'
 info:
     title:          Service V1 API
     description:    This is the interface used by service providers to enable infrastructure tasks.
-    termsOfService: http://monarchapis.com/terms/
-    contact: 
+    contact:
         name:           Monarch Support
         url:            http://www.monarchapis.com/support
         email:          support@monarchapis.com
-    license: 
+    license:
         name:           Apache 2.0
         url:            http://www.apache.org/licenses/LICENSE-2.0.html
     version:        1.0.0
@@ -291,6 +290,7 @@ definitions:
             - providerId
             - serviceId
             - operation
+            - pathParameters
         properties:
             providerId:
                 type:           string
@@ -323,6 +323,7 @@ definitions:
     ApplicationContext:
         required:
             - id
+            - extended
         properties:
             id:
                 type:           string
@@ -335,6 +336,7 @@ definitions:
             - id
             - label
             - permissions
+            - extended
         properties:
             id:
                 type:           string
@@ -351,6 +353,7 @@ definitions:
         required:
             - id
             - permissions
+            - extended
         properties:
             id:
                 type:           string
@@ -464,8 +467,9 @@ definitions:
             companyImageUrl:
                 type:           string
     PermissionDetails:
-        reqiured:
+        required:
             - name
+            - flags
         properties:
             name:
                 type:           string
@@ -521,6 +525,7 @@ definitions:
         required:
             - format
             - content
+            - children
         properties:
             format:
                 type:           string
@@ -540,7 +545,7 @@ definitions:
             - tokenType
             - permissions
             - uri
-            - userId
+            - extended
         properties:
             authorizationScheme:
                 type:           string
@@ -572,7 +577,7 @@ definitions:
             - grantType
             - tokenType
             - permissions
-            - userId
+            - extended
         properties:
             id:
                 type:           string

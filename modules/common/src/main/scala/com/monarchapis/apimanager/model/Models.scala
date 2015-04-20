@@ -448,7 +448,7 @@ case class Token(
   @BeanProperty permissionIds: Set[String] = Set(),
   @BeanProperty state: Option[String] = None,
   @BeanProperty uri: Option[String] = None,
-  @BeanProperty userId: String,
+  @BeanProperty userId: Option[String] = None,
   @BeanProperty userContext: Option[String] = None,
   @BeanProperty extended: Map[String, Object] = Map(),
   @BeanProperty externalId: Option[String] = None) extends Entity {

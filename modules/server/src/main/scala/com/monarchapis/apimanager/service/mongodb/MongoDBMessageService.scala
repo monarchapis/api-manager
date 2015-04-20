@@ -58,7 +58,7 @@ class MongoDBMessageService @Inject() (
     .field("key", "key", FieldType.CS_STRING, true, accessor = (e) => e.key)
     .field("locales", "locales", FieldType.OTHER, false, accessor = (e) => {
       val builder = MongoDBObject.newBuilder[String, DBObject]
-      e.locales foreach {
+      if (e.locales != null) e.locales foreach {
         case (key, value) => builder += key -> convert(value)
       }
       builder.result

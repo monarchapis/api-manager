@@ -89,7 +89,7 @@ var AnalyticsFilterView = Marionette.ItemView.extend({
 			var input = $(':input[name="measure"]').empty();
 
 			_.each(measures, function(measure) {
-				if (measure.type == 'string' || measure.type == 'code') {
+				if (measure.type == 'string' || measure.type == 'code' || measure.type == 'boolean') {
 					input.append($('<option />')
 						.attr('value', measure.name + '|values')
 						.text(measure.display));
@@ -456,6 +456,63 @@ var DoughnutView = Marionette.ItemView.extend({
 var GraphView = Marionette.ItemView.extend({
 	template: 'graph',
 
+	otherColors : [
+		"#5B90BF",
+		"#96b5b4",
+		"#a3be8c",
+		"#ab7967",
+		"#d08770",
+		"#b48ead",
+		"#bf616a",
+		"#ebcb8b",
+		"#8fa1b3"
+	],
+
+	evenSeriesLengths : function(x, keys) {
+		for (var i=0; i<this.series.length; i++) {
+			if (!keys[this.series[i].name]) {
+				this.series[i].data.push({ x : x, y : 0 });
+			}
+		}
+	},
+
+	addKeyStats : function(x, keys, stat) {
+		var count = stat.counts[key];
+
+		var series = null;
+
+		for (var i=0; i<this.series.length; i++) {
+			if (this.series[i].name == key) {
+				series = this.series[i];
+				break;
+			}
+		}
+
+		if (series == null) {
+			var data = [];
+
+			if (this.series.length > 0) {
+				var first = this.series[0].data;
+
+				for (var i=0; i<first.length && first[i].x < x; i++) {
+					data.push({ x : first[i].x, y : 0 });
+				}
+			}
+
+			series = {
+				color : this.otherColors[this.series.length % this.otherColors.length],
+				data : data,
+				name : key
+			}
+
+			this.series.push(series);
+		}
+
+		keys[key] = true;
+
+		series.data.push({ x : x, y : count });
+	},
+
 	measures : {
 		status_code : {
 			label : "hits",
@@ -488,6 +545,27 @@ var GraphView = Marionette.ItemView.extend({
 
 				this.series[0].data.push({ x : x, y : ys });
 				this.series[1].data.push({ x : x, y : yf });
+			}
+		},
+		error_reason : {
+			label : "hits",
+			getSeries : function() {
+				return [];
+			},
+			pushData : function(x, stat) {
+				if (!stat.counts) {
+					stat.counts = {
+						ok : 0
+					}
+				}
+
+				var keys = {};
+
+				for (key in stat.counts) {
+					this.addKeyStats(x, keys, stat);
+				}
+
+				this.evenSeriesLengths(x, keys);
 			}
 		},
 		request_size : {
@@ -545,6 +623,39 @@ var GraphView = Marionette.ItemView.extend({
 					y = this.measureType == "average" ? (stat.value.sum / stat.value.count) : stat.value.sum;
 				}
 				this.series[0].data.push({ x : x, y : y });
+			}
+		},
+		cache_hit : {
+			label : "hits",
+			getSeries : function() {
+				return [
+					{
+						color: '#9CC1E0',
+						data: [],
+						name: 'Hits'
+					}, {
+						color: '#D9534F',
+						data: [],
+						name: 'Misses'
+					}
+				]
+			},
+			pushData : function(x, stat) {
+				var codes = stat.counts;
+				var yh = 0, ym = 0;
+
+				if (codes != null) {
+					for (var key in codes) {
+						if (key.toLowerCase() == 'hits') {
+							yh += codes[key];
+						} else {
+							ym += codes[key];
+						}
+					}
+				}
+
+				this.series[0].data.push({ x : x, y : yh });
+				this.series[1].data.push({ x : x, y : ym });
 			}
 		}
 	},
@@ -626,6 +737,8 @@ var GraphView = Marionette.ItemView.extend({
 		if ('start' in data) this.start = data.start;
 		if ('end' in data) this.end = data.end;
 		if ('parameters' in data) this.parameters = data.parameters;
+		if ('measureName' in data) this.measureName = data.measureName;
+		if ('measureType' in data) this.measureType = data.measureType;
 		this.update(data.scollTo);
 	},
 

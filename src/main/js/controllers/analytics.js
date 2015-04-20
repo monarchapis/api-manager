@@ -39,6 +39,7 @@ Controllers.analytics = function() {
 			return filter;
 		}
 	}));
+
 	layout.topApplications.show(new DoughnutView({
 		measure: 'application_id',
 		measureType: 'values',
@@ -60,6 +61,7 @@ Controllers.analytics = function() {
 			return filter;
 		}
 	}));
+
 	layout.topServices.show(new DoughnutView({
 		measure: 'service_id',
 		unit: unit,

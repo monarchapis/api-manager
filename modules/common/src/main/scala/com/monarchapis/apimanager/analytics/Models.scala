@@ -137,7 +137,7 @@ case class FieldDescriptor(
   @BeanProperty val `type`: String,
   @BeanProperty val usage: String,
   @BooleanBeanProperty val required: Boolean,
-  @JsonInclude(Include.NON_NULL)@BeanProperty val default: Option[String] = None)
+  @JsonInclude(Include.NON_NULL)@BeanProperty val defaultValue: Option[String] = None)
 
 case class Processor(
   @BeanProperty val name: String,

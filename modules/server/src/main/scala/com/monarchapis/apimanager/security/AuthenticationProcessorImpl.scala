@@ -239,54 +239,56 @@ class AuthenticationProcessorImpl(
           }
 
           val principal = context.token match {
-            case Some(token) => Some(
-              PrincipalContext(
-                id = token.userId,
-                context = token.userContext,
-                claims = {
-                  val builder = Set.newBuilder[Claim]
+            case Some(token) => if (token.userId.isDefined) {
+              Some(
+                PrincipalContext(
+                  id = token.userId.get,
+                  context = token.userContext,
+                  claims = {
+                    val builder = Set.newBuilder[Claim]
 
-                  if (context.claims.isDefined) {
-                    builder ++= context.claims.get
-                  }
+                    if (context.claims.isDefined) {
+                      builder ++= context.claims.get
+                    }
 
-                  if (client.isInstanceOf[Client]) {
-                    val claimSources = client.asInstanceOf[Client].claimSources
+                    if (client.isInstanceOf[Client]) {
+                      val claimSources = client.asInstanceOf[Client].claimSources
 
-                    for (config <- claimSources) {
-                      claimSourceRegistry(config.name) match {
-                        case Some(claimSource) => {
-                          val claims = claimSource.getClaims(config, request, context)
-                          builder ++= claims
+                      for (config <- claimSources) {
+                        claimSourceRegistry(config.name) match {
+                          case Some(claimSource) => {
+                            val claims = claimSource.getClaims(config, request, context)
+                            builder ++= claims
+                          }
+                          case _ => {
+                            warn(s"Could not find claim source named ${config.name}.")
+                            verified = false
+                            break
+                          }
                         }
+                      }
+                    }
+
+                    val claims = builder.result
+
+                    val mapPrep = new collection.mutable.HashMap[String, collection.mutable.Set[String]]
+
+                    for (claim <- claims) {
+                      var set = mapPrep.get(claim.`type`) match {
+                        case Some(set) => set
                         case _ => {
-                          warn(s"Could not find claim source named ${config.name}.")
-                          verified = false
-                          break
+                          val set = new collection.mutable.HashSet[String]
+                          mapPrep += claim.`type` -> set
+                          set
                         }
                       }
-                    }
-                  }
 
-                  val claims = builder.result
-
-                  val mapPrep = new collection.mutable.HashMap[String, collection.mutable.Set[String]]
-
-                  for (claim <- claims) {
-                    var set = mapPrep.get(claim.`type`) match {
-                      case Some(set) => set
-                      case _ => {
-                        val set = new collection.mutable.HashSet[String]
-                        mapPrep += claim.`type` -> set
-                        set
-                      }
+                      set += claim.value
                     }
 
-                    set += claim.value
-                  }
-
-                  mapPrep map (c => c._1 -> c._2.toSet) toMap
-                }))
+                    mapPrep map (c => c._1 -> c._2.toSet) toMap
+                  }))
+            } else { None }
             case _ => None
           }
 

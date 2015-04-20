@@ -289,7 +289,7 @@ class ServiceManagerImpl(
       lifecycle = permissionSet.lifespan,
       permissionIds = permissionIds,
       state = request.state,
-      uri = Some(request.uri),
+      uri = request.uri,
       userId = request.userId,
       userContext = request.userContext,
       extended = request.extended)

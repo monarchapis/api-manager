@@ -84,7 +84,7 @@ class ModelTests extends FlatSpec with Matchers {
     lastAccessedDate = created,
     expiresIn = Some(3600L),
     lifecycle = "test",
-    userId = "test")
+    userId = Some("test"))
 
   it should "indicate that it is expired after the 'expiresIn' time has past" in {
     val created = DateTime.now.minusSeconds(3601)

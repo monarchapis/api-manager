@@ -1,13 +1,12 @@
 swagger: '2.0'
 info:
     title:          Analytics V1 API
-    description:    This interface captures event data and generates aggregate reports
-    termsOfService: http://monarchapis.com/terms/
-    contact: 
+    description:    This interface captures event data and generates aggregate reports.
+    contact:
         name:           Monarch Support
         url:            http://www.monarchapis.com/support
         email:          support@monarchapis.com
-    license: 
+    license:
         name:           Apache 2.0
         url:            http://www.apache.org/licenses/LICENSE-2.0.html
     version:        1.0.0
@@ -22,11 +21,11 @@ produces:
   - application/json
 paths:
     /{eventType}:
-        post: 
+        get: 
             tags: 
                 - events
             summary:        Retrieves the event and field descriptor information
-            description:    TODO
+            description:    This call can be used to obtain information about the field that comprise an event.  Additionally, index information is returned so that the client can determine the most optimized queries. 
             operationId:    getEventDescriptor
             x-resource-operation: getDescriptor
             parameters:
@@ -44,7 +43,7 @@ paths:
             tags:
                 - events
             summary:        Creates a new event
-            description:    TODO
+            description:    The input (e.g. required fields) is determined based on the event type.  When the event flows through the processing pipeline, its possible for the event to be manipulated.  The final state of the event is returned to the client. 
             operationId:    createEvent
             x-resource-operation: create
             parameters:
@@ -55,7 +54,7 @@ paths:
                 -
                     name:               body
                     in:                 body
-                    description:        TODO
+                    description:        The event data based on the event type
                     required:           true
                     schema:
                         $ref: '#/definitions/ObjectData'
@@ -66,7 +65,7 @@ paths:
             tags:
                 - events
             summary:        Queries events in a specified time range
-            description:    TODO
+            description:    Use this operation to return raw event data for a given time range for request-level analysis.  Optionally, a query can be used to filter the events returned.
             operationId:    queryEvents
             x-resource-operation: query
             parameters:
@@ -74,6 +73,12 @@ paths:
                     $ref:               '#/parameters/environmentId'
                 -
                     $ref:               '#/parameters/eventType'
+                -
+                    $ref:               '#/parameters/start'
+                -
+                    $ref:               '#/parameters/end'
+                -
+                    $ref:               '#/parameters/query'
             responses:
                 200:
                     description:    The events that match the given criteria
@@ -84,7 +89,7 @@ paths:
             tags: 
                 - metrics
             summary:        Retrieve metric time series for a specified time range
-            description:    TODO
+            description:    Use this operation to return aggregate data for a given time range.  Optionally, a query can be used to filter the events returned.
             operationId:    metrics
             parameters:
                 -
@@ -94,11 +99,19 @@ paths:
                 -
                     $ref:               '#/parameters/metric'
                 -
-                    name:               tier
-                    in:                 path
-                    type:               string
-                    description:        The tier to return
-                    required:           true
+                    $ref:               '#/parameters/tier'
+                -
+                    $ref:               '#/parameters/start'
+                -
+                    $ref:               '#/parameters/end'
+                -
+                    $ref:               '#/parameters/query'
+                -
+                    $ref:               '#/parameters/fillGaps'
+                -
+                    $ref:               '#/parameters/refreshing'
+                -
+                    $ref:               '#/parameters/limit'
             responses:
                 200:
                     description:    The metrics for the given criteria
@@ -109,7 +122,7 @@ paths:
             tags: 
                 - metrics
             summary:        Retrieve metric counts for a specified time range
-            description:    TODO
+            description:    Similar to the series operation, but simply returns total counts instead of a time series.
             operationId:    metrics
             parameters:
                 -
@@ -119,11 +132,15 @@ paths:
                 -
                     $ref:               '#/parameters/metric'
                 -
-                    name:               tier
-                    in:                 path
-                    type:               string
-                    description:        The tier to return
-                    required:           true
+                    $ref:               '#/parameters/tier'
+                -
+                    $ref:               '#/parameters/start'
+                -
+                    $ref:               '#/parameters/end'
+                -
+                    $ref:               '#/parameters/query'
+                -
+                    $ref:               '#/parameters/limit'
             responses:
                 200:
                     description:    The metrics for the given criteria
@@ -134,7 +151,7 @@ paths:
             tags: 
                 - metrics
             summary:        Retrieve distinct values for a specified time range
-            description:    TODO
+            description:    Returns a list of distinct values for a metric which can be useful for populating query filters in a GUI.
             operationId:    distinct
             parameters:
                 -
@@ -143,6 +160,12 @@ paths:
                     $ref:               '#/parameters/eventType'
                 -
                     $ref:               '#/parameters/metric'
+                -
+                    $ref:               '#/parameters/start'
+                -
+                    $ref:               '#/parameters/end'
+                -
+                    $ref:               '#/parameters/query'
             responses:
                 200:
                     description:    The metrics for the given criteria
@@ -153,28 +176,38 @@ paths:
 #
 definitions:
     ObjectData:
+        description:                General key/value pairs
         additionalProperties:       true
     EventDescriptor:
+        description:                The representation of an event descriptor
         required:
             - name
             - display
             - timezone
+            - fields
+            - indexes
         properties:
             name:
                 type:               string
+                description:        The event name
             display:
                 type:               string
+                description:        The event name formatted for display purposes (e.g. capitalization, spacing)
             timezone:
                 type:               string
+                description:        The name of the time zone that the events are being stored in
             fields:
                 type:               array
+                description:        The list of fields that comprise the event
                 items:
                     $ref:               '#/definitions/FieldDescriptor'
             indexes:
                 type:               array
+                description:        The list of database indexes on the event
                 items:
                     $ref:               '#/definitions/Index'
     FieldDescriptor:
+        description:                The representation of a field descriptor
         required:
             - name
             - display
@@ -184,10 +217,13 @@ definitions:
         properties:
             name:
                 type:               string
+                description:        The event field name
             display:
                 type:               string
+                description:        The event field name formatted for display purposes (e.g. capitalization, spacing)
             type:
                 type:               string
+                description:        The event field type
                 enum:
                     - string
                     - boolean
@@ -198,28 +234,37 @@ definitions:
                     - code
             usage:
                 type:               string
+                description:        How the event field is used
                 enum:
                     - dimension
                     - measure
             required:
                 type:               boolean
-            default:
+                description:        Flag that denotes if the field is required
+            defaultValue:
                 type:               string
+                description:        An optional default value for the field if it is not provided in the create operation
     Index:
+        description:                The representation of a database index
         required:
             - name
             - "on"
+            - unique
         properties:
             name:
                 type:               string
+                description:        The name of the index
             on:
                 type:               array
+                description:        The list of field names included in the index, in order
                 items:
                     type:               string
             unique:
                 type:               boolean
+                description:        Flag that denotes if the index is has a constraint on storing only unique values
                 default:            false
     AnalyticsResponse:
+        description:                The base representation of all time range-based analytics responses
         required:
             - start
             - end
@@ -228,15 +273,20 @@ definitions:
             start:
                 type:               string
                 format:             datetime
+                description:        The start date/time of the data returned
             end:
                 type:               string
                 format:             datetime
+                description:        The end date/time of the data returned
             timezoneOffset:
                 type:               integer
                 format:             int32
+                description:        The timezone offset in milliseconds to UTC
             query:
                 type:               string
+                description:        The value of the query if provided in the request
     EventsResponse:
+        description:                The representation of an events response
         allOf:
             -
                 $ref:               '#/definitions/AnalyticsResponse'
@@ -247,11 +297,14 @@ definitions:
             samples:
                 type:               integer
                 format:             int64
+                description:        The number of samples returned
             events:
                 type:               array
+                description:        The list of matched events
                 items:
                     $ref:               '#/definitions/ObjectData'
     MetricsResponse:
+        description:                The representation of a metrics response
         allOf:
             -
                 $ref:               '#/definitions/AnalyticsResponse'
@@ -260,21 +313,27 @@ definitions:
             - unit
             - samples
             - data
+            - labels
         properties:
             fieldType:
                 type:               string
+                description:        The field type
             unit:
                 type:               string
+                description:        The time unit of the returned data
             samples:
                 type:               integer
                 format:             int64
+                description:        The number of samples returned
             data:
                 type:               array
+                description:        The list of aggregate data bins
                 items:
                     $ref:               '#/definitions/Bin'
             labels:
                 $ref:               '#/definitions/StringMap'
     ValueCountsResponse:
+        description:                The representation of a value counts response
         allOf:
             -
                 $ref:               '#/definitions/AnalyticsResponse'
@@ -283,41 +342,52 @@ definitions:
         properties:
             data:
                 type:               array
+                description:        The list of aggregate value counts
                 items:
                     $ref:               '#/definitions/ValueCount'
             labels:
                 $ref:               '#/definitions/StringMap'
     Bin:
+        description:                The representation of a bin
         required:
             - time
         properties:
             time:
                 type:               string
                 format:             datetime
+                description:        The date/time of the sample bin
             value:
                 $ref:               '#/definitions/BinValue'
             counts:
                 $ref:               '#/definitions/LongMap'
-     ValueCount:
+    ValueCount:
+        description:                The representation of a single value count
         required:
             - value
             - count
         properties:
             value:
                 type:               string
+                description:        The value of the metric
             count:
                 type:               integer
-                format:             int64            
+                format:             int64 
+                description:        The number of time the value occurs           
     LongMap:
+        description:                The representation of a general map of strings to long values
         patternProperties:
             \w*:
                 type:               integer
                 format:             int64
+                description:        The value associated with the given key
     StringMap:
+        description:                The representation of a general map of strings to string values
         patternProperties:
             \w*:
                 type:               string
+                description:        The value associated with the given key
     BinValue:
+        description:                The representation of a single bin value
         required:
             - count
             - sum
@@ -325,10 +395,13 @@ definitions:
             count:
                 type:               integer
                 format:             int64
+                description:        The count for the sample 
             sum:
                 type:               number
                 format:             double
+                description:        The sum for the sample
     DistinctResponse:
+        description:                The representation of a distinct response
         allOf:
             -
                 $ref:               '#/definitions/AnalyticsResponse'
@@ -338,6 +411,7 @@ definitions:
         properties:
             values:
                 type:               array
+                description:        The list of distinct metric values
                 items:
                     type:               string
             labels:
@@ -364,13 +438,58 @@ parameters:
         type:           string
         description:    The metric to return
         required:       true
+    tier:
+        name:           tier
+        in:             path
+        type:           string
+        description:    The unit of time tier
+        required:       true
+    start:
+        name:           start
+        in:             query
+        type:           string
+        format:         datetime
+        description:    The start date/time
+        required:       false
+    end:
+        name:           end
+        in:             query
+        type:           string
+        format:         datetime
+        description:    The end date/time
+        required:       true
+    query:
+        name:           query
+        in:             query
+        type:           string
+        description:    The query for filter the results by event fields 
+        required:       true
+    fillGaps:
+        name:           fillGaps
+        in:             query
+        type:           boolean
+        description:    The flag that denotes if the gaps in event data should be filled with zeros 
+        required:       false
+    refreshing:
+        name:           refreshing
+        in:             query
+        type:           boolean
+        description:    The flag that denotes if the client is refreshing this data on an interval.  If so, the current sample is removed. 
+        required:       false
+    limit:
+        name:           limit
+        in:             query
+        type:           integer
+        format:         int32
+        description:    The maximum number of samples or values to return 
+        required:       false
 securityDefinitions:
     basic:
         type:           basic
-        description:    Authenticaiton for users via the administration console
+        description:    Authentication for users via the administration console
     apiKey:
         type:           apiKey
-        description:    Authenticaiton for providers (e.g. services, oauth, portal, internal apps)
+        description:    Authentication for providers (e.g. Services, OAuth, Dev Portal, Internal Apps)
         name:           X-Api-Key
         in:             header
 security:

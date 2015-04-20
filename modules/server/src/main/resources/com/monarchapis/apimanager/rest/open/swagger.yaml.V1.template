@@ -1,13 +1,12 @@
 swagger: '2.0'
 info:
     title:          Open V1 API
-    description:    This interface provides access to general purpose operations that should not require authentication
-    termsOfService: http://monarchapis.com/terms/
-    contact: 
+    description:    This interface provides access to general purpose operations that should not require authentication.
+    contact:
         name:           Monarch Support
         url:            http://www.monarchapis.com/support
         email:          support@monarchapis.com
-    license: 
+    license:
         name:           Apache 2.0
         url:            http://www.apache.org/licenses/LICENSE-2.0.html
     version:        1.0.0

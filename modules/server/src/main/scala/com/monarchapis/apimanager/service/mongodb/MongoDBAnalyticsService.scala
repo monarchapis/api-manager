@@ -37,7 +37,7 @@ import com.monarchapis.apimanager.analytics.EventDescriptor
 import com.monarchapis.apimanager.analytics.EventProcessorRegistry
 import com.monarchapis.apimanager.analytics.EventsResponse
 import com.monarchapis.apimanager.analytics.FieldDescriptor
-import com.monarchapis.apimanager.analytics.{FieldType => AnalyticsFieldType}
+import com.monarchapis.apimanager.analytics.{ FieldType => AnalyticsFieldType }
 import com.monarchapis.apimanager.analytics.MetricsResponse
 import com.monarchapis.apimanager.analytics.StringShortener
 import com.monarchapis.apimanager.analytics.Tier
@@ -66,6 +66,19 @@ function m() {
 """
   }
 
+  private val EVENT_BOOLEAN_MAP: (String, String) => String = (dateFn: String, metric: String) => {
+    s"""
+function m() {
+    var t = this._t;
+	var date = $dateFn;
+	var o = {};
+	o[this.$metric ? 'Hits' : 'Misses'] = 1;
+
+	emit( date, { counts : o });
+}
+"""
+  }
+
   private val EVENT_COUNT_MAP: (String, String) => String = (dateFn: String, metric: String) => {
     s"""
 function m() {
@@ -84,7 +97,8 @@ function m() {
     AnalyticsFieldType.STRING -> EVENT_COUNT_MAP,
     AnalyticsFieldType.CODE -> EVENT_COUNT_MAP,
     AnalyticsFieldType.INTEGER -> EVENT_VALUE_MAP,
-    AnalyticsFieldType.DECIMAL -> EVENT_VALUE_MAP)
+    AnalyticsFieldType.DECIMAL -> EVENT_VALUE_MAP,
+    AnalyticsFieldType.BOOLEAN -> EVENT_BOOLEAN_MAP)
 
   private val eventValueReduce = s"""
 function r(key, values) {
@@ -120,16 +134,16 @@ function r(key, values) {
     AnalyticsFieldType.STRING -> eventCountReduce,
     AnalyticsFieldType.CODE -> eventCountReduce,
     AnalyticsFieldType.INTEGER -> eventValueReduce,
-    AnalyticsFieldType.DECIMAL -> eventValueReduce)
+    AnalyticsFieldType.DECIMAL -> eventValueReduce,
+    AnalyticsFieldType.BOOLEAN -> eventCountReduce)
 }
 
 class MongoDBAnalyticsService(
   connectionManager: MultitenantMongoDBConnectionManager,
   configuration: AnalyticsConfiguration) extends AnalyticsService with MongoDBUtils with Logging {
 
+  import AnalyticsService._
   import MongoDBAnalyticsService._
-
-  private val sampleLimit = 10000
 
   private val indexedEvents = new scala.collection.mutable.HashSet[String]
   private val indexedMetrics = new scala.collection.mutable.HashSet[String]
@@ -168,7 +182,8 @@ class MongoDBAnalyticsService(
           display = field.display,
           `type` = field.`type`.toString,
           usage = field.usage.toString,
-          required = field.required)
+          required = field.required,
+          defaultValue = field.default)
       })),
       indexes = event.indexes)
   }
@@ -291,7 +306,8 @@ class MongoDBAnalyticsService(
     endIn: DateTime = DateTime.now,
     query: Option[String] = None,
     fillGaps: Boolean = false,
-    refreshing: Boolean = false) = {
+    refreshing: Boolean = false,
+    limit: Integer = DEFAULT_SAMPLE_LIMIT) = {
     val (start, end, offset, fieldType, unit, bins, labels) = metricSeries( //
       eventType, //
       metric, //
@@ -300,7 +316,8 @@ class MongoDBAnalyticsService(
       endIn, //
       query, //
       fillGaps, //
-      refreshing)
+      refreshing, //
+      limit)
 
     MetricsResponse(
       start,
@@ -322,7 +339,8 @@ class MongoDBAnalyticsService(
     endIn: DateTime = DateTime.now,
     query: Option[String] = None,
     fillGaps: Boolean = false,
-    refreshing: Boolean = false): (DateTime, DateTime, Int, String, String, List[Bin], Option[Map[String, String]]) = {
+    refreshing: Boolean = false,
+    limit: Integer = DEFAULT_SAMPLE_LIMIT): (DateTime, DateTime, Int, String, String, List[Bin], Option[Map[String, String]]) = {
     val maxInvalidationTs = System.currentTimeMillis
     var tier = Tiers.tiers.getOrElse(tierKey, throw new NotFoundException(s"Unknown tier $tierKey"))
     var event = configuration.event(eventType).getOrElse(throw new NotFoundException(s"Could not find event type $eventType"))
@@ -337,11 +355,11 @@ class MongoDBAnalyticsService(
       end = tier.ceil(endIn.toDateTime(event.dateTimeZone))
       samples = tier.samples(start, end)
 
-      if (samples > sampleLimit) {
-        tier = Tiers.prevs.getOrElse(tier.key, throw new BadRequestException(s"Too many samples were requested.  The limit is $sampleLimit.  You requested $samples"))
+      if (samples > limit) {
+        tier = Tiers.prevs.getOrElse(tier.key, throw new BadRequestException(s"Too many samples were requested.  The limit is $limit.  You requested $samples"))
         event = configuration.event(eventType).getOrElse(throw new NotFoundException(s"Could not find event type $eventType"))
       }
-    } while (samples > sampleLimit)
+    } while (samples > limit)
 
     if (refreshing) {
       val max = tier.floor(DateTime.now)
@@ -352,8 +370,8 @@ class MongoDBAnalyticsService(
     }
 
     val metricField = event.field(metric).getOrElse(throw new NotFoundException(s"Could not find metric $metric"))
-    val eventMap = eventMaps.getOrElse(metricField.`type`, throw new NotFoundException(s"Could not event map function for $metric"))
-    val eventReduce = eventReduces.getOrElse(metricField.`type`, throw new NotFoundException(s"Could not event reduce function for $metric"))
+    val eventMap = eventMaps.getOrElse(metricField.`type`, throw new NotFoundException(s"Could not find event map function for $metric"))
+    val eventReduce = eventReduces.getOrElse(metricField.`type`, throw new NotFoundException(s"Could not find event reduce function for $metric"))
     val shortener = shorteners(eventType)
     val objectConvertor = new DBObjectConvertor(shortener)
 
@@ -579,7 +597,7 @@ class MongoDBAnalyticsService(
 
                 bins.foreach(bin => {
                   bin.counts.foreach(count => {
-                    builder ++= count.keySet filter(v => v.length > 0)
+                    builder ++= count.keySet filter (v => v.length > 0)
                   })
                 })
 

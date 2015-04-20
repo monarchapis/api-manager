@@ -7,7 +7,7 @@ object BuildSettings {
   import Resolvers._
 
   val buildOrganization = "com.monarchapis"
-  val buildVersion = "0.8.1"
+  val buildVersion = "0.8.2"
   val buildScalaVersion = "2.11.2"
 
   val globalSettings = Seq(

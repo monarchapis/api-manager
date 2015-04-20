@@ -51,7 +51,7 @@ class HawkV1Authenticator @Inject() (
   import HawkV1Authenticator._
 
   @Value("${hawk.maxTimestampSkew:60}")
-  val maxTimestampSkew: Int = 60
+  var maxTimestampSkew: Int = 60
 
   @PostConstruct
   def constructed {
@@ -244,7 +244,7 @@ class HawkV1Authenticator @Inject() (
       client = Some(client),
       token = token,
       principal = token match {
-        case Some(token) => Some(token.userId)
+        case Some(token) => token.userId
         case _ => None
       }))
   }

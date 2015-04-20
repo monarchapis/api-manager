@@ -61,6 +61,7 @@ object AnalyticsResource {
 class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecutor: TaskExecutor) {
   require(analyticsService != null, "analyticsService is required")
 
+  import AnalyticsService._
   import AnalyticsResource._
 
   @GET
@@ -121,7 +122,8 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
     @QueryParam("end") end: String,
     @QueryParam("query") query: String,
     @QueryParam("fillGaps") fillGaps: Boolean,
-    @QueryParam("refreshing") refreshing: Boolean) = {
+    @QueryParam("refreshing") refreshing: Boolean,
+    @QueryParam("limit") limit: Integer) = {
     if (start == null) throw new InvalidParamaterException("start is a required field")
 
     analyticsService.metrics(
@@ -130,7 +132,8 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
       parseDate(end),
       if (query != null) Some(query) else None,
       fillGaps,
-      refreshing)
+      refreshing,
+      if (limit != null) limit else DEFAULT_SAMPLE_LIMIT)
   }
 
   @Path("/{eventType}/metrics/{metric}/{tier}/counts")

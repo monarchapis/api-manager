@@ -2,12 +2,11 @@ swagger: '2.0'
 info:
     title:          Management V1 API
     description:    This is the interface used to manage configuration data that governs APIs.
-    termsOfService: http://monarchapis.com/terms/
-    contact: 
+    contact:
         name:           Monarch Support
         url:            http://www.monarchapis.com/support
         email:          support@monarchapis.com
-    license: 
+    license:
         name:           Apache 2.0
         url:            http://www.apache.org/licenses/LICENSE-2.0.html
     version:        1.0.0
@@ -2471,6 +2470,8 @@ definitions:
             - applicationUrl
             - companyName
             - companyUrl
+            - callbackUris
+            - extended
         properties:
             name:
                 type:           string
@@ -2536,6 +2537,11 @@ definitions:
             - label
             - enabled
             - apiKey
+            - authenticators
+            - policies
+            - clientPermissionIds
+            - permissionSets
+            - extended
         properties:
             applicationId:
                 type:           string
@@ -2627,6 +2633,7 @@ definitions:
             - global
             - lifespan
             - refreshable
+            - permissionIds
             - autoAuthorize
             - allowWebView
             - allowPopup
@@ -2662,7 +2669,8 @@ definitions:
             - username
             - firstName
             - lastName
-            - registrationIp
+            - roles
+            - extended
         properties:
             username:
                 type:           string
@@ -2844,6 +2852,7 @@ definitions:
             - type
             - scope
             - messageId
+            - flags
         properties:
             name:
                 type:           string
@@ -2885,6 +2894,7 @@ definitions:
             - name
             - priceAmount
             - priceCurrency
+            - quotas
         properties:
             name:
                 type:           string
@@ -2936,6 +2946,8 @@ definitions:
         required:
             - profileId
             - name
+            - inherits
+            - claims
         properties:
             profileId:
                 type:           string
@@ -3006,7 +3018,12 @@ definitions:
             - label
             - enabled
             - apiKey
+            - authenticators
+            - policies
+            - permissions
+            - accessLevels
             - behindReverseProxy
+            - extended
         properties:
             label:
                 type:           string
@@ -3057,6 +3074,8 @@ definitions:
         required:
             - roleName
             - displayName
+            - permissions
+            - accessLevels
         properties:
             roleName:
                 type:           string
@@ -3095,6 +3114,10 @@ definitions:
         required:
             - name
             - accessControl
+            - hostnames
+            - operations
+            - flags
+            - extended
         properties:
             name:
                 type:           string
@@ -3131,6 +3154,9 @@ definitions:
             - name
             - method
             - uriPattern
+            - clientPermissionIds
+            - delegatedPermissionIds
+            - claims
         properties:
             name:
                 type:           string
@@ -3199,7 +3225,8 @@ definitions:
             - tokenType
             - grantType
             - lifecycle
-            - userId
+            - permissionIds
+            - extended
         properties:
             clientId:
                 type:           string

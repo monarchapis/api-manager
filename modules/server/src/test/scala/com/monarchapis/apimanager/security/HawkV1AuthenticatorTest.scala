@@ -50,10 +50,13 @@ class HawkV1AuthenticatorTest extends FlatSpec with Matchers with MockitoSugar {
 
   val clientNoAlgorithms = client.withApiKey("dh37fgj492jb").withAuthenticators(Map("hawkV1" -> Map()))
   val clientWithSecret = client.withApiKey("dh37fgj492je").withSharedSecret(Some("abdefabcdefabdef"))
+  val clientWithLongSecret = client.withApiKey("dh37fgj492je").withSharedSecret(Some("werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"))
+  val clientTest = client.withApiKey("123456").withSharedSecret(Some("werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"))
 
   when(keyStore.findByApiKey("dh37fgj492ja")).thenReturn(Some(client))
   when(keyStore.findByApiKey("dh37fgj492jb")).thenReturn(Some(clientNoAlgorithms))
   when(keyStore.findByApiKey("dh37fgj492je")).thenReturn(Some(clientWithSecret))
+  when(keyStore.findByApiKey("123456")).thenReturn(Some(clientTest))
 
   behavior of "HawkV1Authenticator"
 

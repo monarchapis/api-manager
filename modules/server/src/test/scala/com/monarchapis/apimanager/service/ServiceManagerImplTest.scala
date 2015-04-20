@@ -86,7 +86,7 @@ class ServiceManagerImplTest extends FlatSpec with Matchers with MockitoSugar {
       expiresIn = Some(3600),
       lifecycle = "finite",
       uri = Some("http://mockapp.com/oauth"),
-      userId = "testuser",
+      userId = Some("testuser"),
       permissionIds = Set("permission1"))))
 
     when(tokenService.findByToken("654321")).thenReturn(Some(Token(
@@ -99,7 +99,7 @@ class ServiceManagerImplTest extends FlatSpec with Matchers with MockitoSugar {
       expiresIn = Some(3600),
       lifecycle = "finite",
       uri = Some("http://mockapp.com/oauth"),
-      userId = "testuser",
+      userId = Some("testuser"),
       permissionIds = Set("permission1"))))
 
     when(tokenService.findByToken("none")).thenReturn(None)

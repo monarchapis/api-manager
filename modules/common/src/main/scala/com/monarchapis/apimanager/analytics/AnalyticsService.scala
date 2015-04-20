@@ -21,7 +21,13 @@ import org.joda.time.DateTime
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 
+object AnalyticsService {
+  val DEFAULT_SAMPLE_LIMIT = 200
+}
+
 trait AnalyticsService {
+  import AnalyticsService._
+  
   def event: List[EventDescriptor]
 
   def event(eventType: String): EventDescriptor
@@ -44,7 +50,8 @@ trait AnalyticsService {
     end: DateTime = DateTime.now,
     query: Option[String] = None,
     fillGaps: Boolean = false,
-    refreshing: Boolean = false): MetricsResponse
+    refreshing: Boolean = false,
+    maxSamples: Integer = DEFAULT_SAMPLE_LIMIT): MetricsResponse
 
   def counts(
     eventType: String,

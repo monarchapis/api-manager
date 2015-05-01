@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-    title:          Event V1 API
+    title:          Command V1 API
     description:    This interface allows for custom operations to be performed inside Monarch.
     contact:
         name:           Monarch Support
@@ -11,7 +11,7 @@ info:
         url:            http://www.apache.org/licenses/LICENSE-2.0.html
     version:        1.0.0
 host:           ${host}
-basePath:       ${context}/event/v1
+basePath:       ${context}/command/v1
 schemes:
   - http
   - https
@@ -20,18 +20,18 @@ consumes:
 produces:
   - application/json
 paths:
-    /{eventType}:
+    /{commandType}:
         post: 
             tags: 
-                - events
-            summary:        Sends an event to a custom event processor
+                - commands
+            summary:        Sends a command to a custom command processor
             description:    TODO
-            operationId:    processEvent
+            operationId:    processCommand
             parameters:
                 -
                     $ref:               '#/parameters/environmentId'
                 -
-                    $ref:               '#/parameters/eventType'
+                    $ref:               '#/parameters/commandType'
                 -
                     name:               body
                     in:                 body
@@ -41,7 +41,7 @@ paths:
                         $ref: '#/definitions/ObjectData'
             responses:
                 200:
-                    description:    The successful event response
+                    description:    The successful command response
                     schema:
                         $ref: '#/definitions/ObjectData'
 #
@@ -61,19 +61,19 @@ parameters:
         type:           string
         description:    The environment identifier
         x-global:       true
-    eventType:
-        name:           eventType
+    commandType:
+        name:           commandType
         in:             path
         type:           string
-        description:    The event type
+        description:    The command type
         required:       true
 securityDefinitions:
     basic:
         type:           basic
-        description:    Authenticaiton for users via the administration console
+        description:    Authentication for users via the administration console
     apiKey:
         type:           apiKey
-        description:    Authenticaiton for providers (e.g. services, oauth, portal, internal apps)
+        description:    Authentication for providers (e.g. services, OAuth, developer portal, internal applications)
         name:           X-Api-Key
         in:             header
 security:
@@ -82,7 +82,7 @@ security:
       apiKey: []
 tags:
     -
-        name:           events
+        name:           commands
         x-type:         resource
     -
         name:           metrics

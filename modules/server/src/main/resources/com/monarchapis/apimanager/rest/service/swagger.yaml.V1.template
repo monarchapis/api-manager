@@ -213,7 +213,11 @@ definitions:
             - host
             - port
             - path
+            - headers
             - ipAddress
+            - payloadHashes
+            - performAuthorization
+            - bypassRateLimiting
         properties:
             protocol:
                 type:           string
@@ -239,6 +243,8 @@ definitions:
                 format:         float
             performAuthorization:
                 type:           boolean
+            bypassRateLimiting:
+                type:           boolean
     Headers:
         patternProperties:
             \w*:
@@ -256,6 +262,7 @@ definitions:
     AuthenticationResponse:
         required:
             - code
+            - responseHeaders
         properties:
             code:
                 type:           integer

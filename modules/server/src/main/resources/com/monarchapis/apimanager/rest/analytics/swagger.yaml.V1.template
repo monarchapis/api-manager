@@ -44,7 +44,7 @@ paths:
                 - events
             summary:        Creates a new event
             description:    The input (e.g. required fields) is determined based on the event type.  When the event flows through the processing pipeline, its possible for the event to be manipulated.  The final state of the event is returned to the client. 
-            operationId:    createEvent
+            operationId:    collectEvent
             x-resource-operation: create
             parameters:
                 -
@@ -90,7 +90,7 @@ paths:
                 - metrics
             summary:        Retrieve metric time series for a specified time range
             description:    Use this operation to return aggregate data for a given time range.  Optionally, a query can be used to filter the events returned.
-            operationId:    metrics
+            operationId:    queryMetrics
             parameters:
                 -
                     $ref:               '#/parameters/environmentId'
@@ -123,7 +123,7 @@ paths:
                 - metrics
             summary:        Retrieve metric counts for a specified time range
             description:    Similar to the series operation, but simply returns total counts instead of a time series.
-            operationId:    metrics
+            operationId:    queryCounts
             parameters:
                 -
                     $ref:               '#/parameters/environmentId'
@@ -152,7 +152,7 @@ paths:
                 - metrics
             summary:        Retrieve distinct values for a specified time range
             description:    Returns a list of distinct values for a metric which can be useful for populating query filters in a GUI.
-            operationId:    distinct
+            operationId:    queryDistinctValues
             parameters:
                 -
                     $ref:               '#/parameters/environmentId'

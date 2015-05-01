@@ -39,7 +39,7 @@ class CommandResource @Inject() (eventProcessorRegistry: CommandProcessorRegistr
 
   @Path("/{commandType}")
   @POST
-  def processEvent(@PathParam("commandType") commandType: String, request: JsonNode) {
+  def processCommand(@PathParam("commandType") commandType: String, request: JsonNode) {
     eventProcessorRegistry(commandType) match {
       case Some(commandProcessor) => {
         val clazz = commandProcessor.objectType

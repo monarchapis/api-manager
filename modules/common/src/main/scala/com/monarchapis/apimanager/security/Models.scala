@@ -44,7 +44,8 @@ case class AuthenticationRequest(
   @BeanProperty payloadHashes: Map[String, Map[String, String]] = Map(),
   @BeanProperty requestWeight: Option[BigDecimal] = None,
   @BeanProperty performAuthorization: Boolean = false,
-  @BeanProperty bypassRateLimiting: Boolean = false) {
+  @BeanProperty bypassRateLimiting: Boolean = false,
+  @BeanProperty useLoadBalancer: Boolean = false) {
   def withProtocol(protocol: String) = copy(protocol = protocol)
   def withMethod(method: String) = copy(method = method)
   def withPath(path: String) = copy(path = path)
@@ -55,6 +56,7 @@ case class AuthenticationRequest(
   def withRequestWeight(requestWeight: Option[BigDecimal]) = copy(requestWeight = requestWeight)
   def withPerformAuthorization(performAuthorization: Boolean) = copy(performAuthorization = performAuthorization)
   def withBypassRateLimiting(bypassRateLimiting: Boolean) = copy(bypassRateLimiting = bypassRateLimiting)
+  def withUseLoadBalancer(useLoadBalancer: Boolean) = copy(useLoadBalancer = useLoadBalancer)
 
   // Create parallel map with lower case keys
   private val ciHeaders = {
@@ -132,20 +134,6 @@ case class ProviderContext(
   @BeanProperty id: String,
   @BeanProperty label: String)
 
-case class ApiContext(
-  @BeanProperty correlationId: String = StringUtils.replace(UUID.randomUUID.toString, "-", ""),
-  @BeanProperty application: ApplicationContext,
-  @BeanProperty client: ClientContext,
-  @BeanProperty token: Option[TokenContext],
-  @BeanProperty principal: Option[PrincipalContext],
-  @BeanProperty provider: Option[ProviderContext]) {
-  def withApplication(application: ApplicationContext) = copy(application = application)
-  def withClient(client: ClientContext) = copy(client = client)
-  def withToken(token: Option[TokenContext]) = copy(token = token)
-  def withPrincipal(principal: Option[PrincipalContext]) = copy(principal = principal)
-  def withProvider(provider: Option[ProviderContext]) = copy(provider = provider)
-}
-
 case class HttpHeader(
   @BeanProperty name: String,
   @BeanProperty value: String)
@@ -157,6 +145,14 @@ case class VariableContext(
   @BeanProperty operation: Option[String] = None,
   @BeanProperty pathParameters: Option[Map[String, String]] = None)
 
+object ClaimNames {
+  val APPLICATION = "http://monarchapis.com/claims/application"
+  val CLIENT = "http://monarchapis.com/claims/client"
+  val PROVIDER = "http://monarchapis.com/claims/provider"
+  val TOKEN = "http://monarchapis.com/claims/token"
+  val PRINCIPAL = "http://monarchapis.com/claims/principal"
+}
+
 case class AuthenticationResponse(
   @BeanProperty code: Int,
   @BeanProperty reason: Option[String],
@@ -165,7 +161,9 @@ case class AuthenticationResponse(
   @BeanProperty errorCode: Option[String],
   @BeanProperty responseHeaders: List[HttpHeader],
   @BeanProperty vars: Option[VariableContext],
-  @BeanProperty context: Option[ApiContext])
+  @BeanProperty claims: Option[Map[String, Any]],
+  @BeanProperty tokens: Map[String, String],
+  @BeanProperty target: Option[String])
 
 case class AuthorizationRequest(
   @BeanProperty authorizationScheme: String,
@@ -258,7 +256,7 @@ case class LocaleInfo(
   }
 }
 
-case class MessageList(messages: List[MessageDetails])
+case class MessageDetailsList(items: List[MessageDetails])
 
 case class MessageDetails(
   @BeanProperty format: String,

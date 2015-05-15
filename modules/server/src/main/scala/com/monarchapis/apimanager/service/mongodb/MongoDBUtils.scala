@@ -113,7 +113,12 @@ object BasicMongoDBConnectionManager {
             }
           }
           case "SCRAM-SHA-1" => {
-            throw new IllegalArgumentException("SCRAM-SHA-1 is not supported yet.")
+            if (parts.length == 4) {
+              val credential = MongoCredential.createScramSha1Credential(parts(1), parts(2), parts(3).toCharArray())
+              builder += credential
+            } else {
+              throw new IllegalArgumentException(s"Invalid server address $part")
+            }
           }
           case _ => throw new IllegalArgumentException(s"Unknown authentication mechanism ${parts(0)}")
         }
@@ -436,7 +441,7 @@ trait MongoDBUtils extends Logging {
 
   protected def ensureIndex(collection: MongoCollection, fields: MongoDBObject, options: MongoDBObject) {
     try {
-      collection.ensureIndex(fields, options)
+      collection.createIndex(fields, options)
     } catch {
       case wce: WriteConcernException => {
         // Drop and recreate the index if the spec has changed 
@@ -444,7 +449,7 @@ trait MongoDBUtils extends Logging {
           var name = options("name").asInstanceOf[String]
           info(s"Recreating index '$name' on collection ${collection.name}")
           collection.dropIndex(name)
-          collection.ensureIndex(fields, options)
+          collection.createIndex(fields, options)
         } else {
           throw wce
         }

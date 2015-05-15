@@ -1,17 +1,3 @@
-rivets.formatters.stringList = {
-	read: function(value) {
-		return value != null ? value.join("\n") : null;
-	},
-	publish: function(value) {
-		if (value != null) {
-			value = value.trim();
-			return value.length > 0 ? value.split("\n") : [];
-		}
-
-		return null;
-	}
-}
-
 rivets.formatters.integer = {
 	read: function(value) {
 		return value;
@@ -27,6 +13,64 @@ rivets.formatters.decimal = {
 	},
 	publish: function(value) {
 		return value ? parseFloat(value) : null;
+	}
+}
+
+rivets.formatters.stringList = {
+	read: function(value) {
+		return value != null ? value.join("\n") : null;
+	},
+	publish: function(value) {
+		if (value != null) {
+			value = value.trim();
+			return value.length > 0 ? value.split("\n") : [];
+		}
+
+		return null;
+	}
+}
+
+rivets.formatters.integerMap = {
+	read: function(values) {
+		if (values == null) {
+			return null;
+		}
+
+		var ret = "";
+
+		for (key in values) {
+			var value = values[key];
+
+			if (ret.length > 0) {
+				ret += "\n";
+			}
+
+			ret += key + '=' + value;
+		}
+
+		return ret;
+	},
+	publish: function(value) {
+		if (value != null) {
+			value = value.trim();
+			var lines = value.length > 0 ? value.split("\n") : [];
+			var ret = {};
+
+			for (i=0; i<lines.length; i++) {
+				var line = lines[i];
+				var idx = line.indexOf('=');
+
+				if (idx != -1) {
+					var key = line.substring(0, idx);
+					var val = line.substring(idx + 1);
+					ret[key] = parseInt(val);
+				}
+			}
+
+			return ret;
+		}
+
+		return null;
 	}
 }
 

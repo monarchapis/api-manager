@@ -68,9 +68,13 @@ class MongoDBUserService @Inject() (
     // Role membership is stored in the role entity and has to be loaded from there.
     super.load(id) match {
       case Some(user) => {
-        roleService.getUserRole(user) match {
-          case Some(role) => Some(user.withRoleId(Some(role.id)))
-          case _ => Some(user)
+        if (EnvironmentContext.isSet) {
+          roleService.getUserRole(user) match {
+            case Some(role) => Some(user.withRoleId(Some(role.id)))
+            case _ => Some(user)
+          }
+        } else {
+          Some(user)
         }
       }
       case _ => None
@@ -87,9 +91,13 @@ class MongoDBUserService @Inject() (
 
       entity match {
         case Some(user) => {
-          roleService.getUserRole(user) match {
-            case Some(role) => Some(user.withRoleId(Some(role.id)))
-            case _ => Some(user)
+          if (EnvironmentContext.isSet) {
+            roleService.getUserRole(user) match {
+              case Some(role) => Some(user.withRoleId(Some(role.id)))
+              case _ => Some(user)
+            }
+          } else {
+            Some(user)
           }
         }
         case _ => None

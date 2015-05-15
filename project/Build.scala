@@ -7,8 +7,8 @@ object BuildSettings {
   import Resolvers._
 
   val buildOrganization = "com.monarchapis"
-  val buildVersion = "0.8.2"
-  val buildScalaVersion = "2.11.2"
+  val buildVersion = "0.8.3"
+  val buildScalaVersion = "2.11.6"
 
   val globalSettings = Seq(
     organization := buildOrganization,
@@ -17,18 +17,12 @@ object BuildSettings {
     scalacOptions += "-deprecation",
     fork in test := true,
     libraryDependencies ++= Seq(
-      //slf4jSimpleTest,
-      junit,
-      scalatest,
-      mockito,
-      jettyServerTest,
-      log4j,
-      slf4jlog4j12,
-      grizzled,
+      junit, scalatest, mockito,
       jodaTime, jodaConvert),
     resolvers := Seq(
       scalaToolsRepo,
-      sonatypeRepo))
+      sonatypeRepo,
+      ecwidRepo))
 
   val projectSettings = Defaults.defaultSettings ++ globalSettings
 }
@@ -36,6 +30,7 @@ object BuildSettings {
 object Resolvers {
   val sonatypeRepo = "Sonatype Release" at "http://oss.sonatype.org/content/repositories/releases"
   val scalaToolsRepo = "Scala Tools" at "http://scala-tools.org/repo-snapshots/"
+  val ecwidRepo = "ECWID" at "http://nexus.ecwid.com/content/groups/public"
 }
 
 object Dependencies {
@@ -80,6 +75,7 @@ object Dependencies {
   val jacksonJoda = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jacksonVersion
   val jacksonYaml = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.4.0"
 
+  val jaxrs = "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1"
   val jerseyVersion = "2.11"
   val jerseyServer = "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion
   val jerseySpring = "org.glassfish.jersey.ext" % "jersey-spring3" % jerseyVersion
@@ -93,16 +89,22 @@ object Dependencies {
 
   val servletSpec = "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
 
-  val casbahCore = "org.mongodb" % "casbah-core_2.11" % "2.7.3"
+  val casbahCore = "org.mongodb" % "casbah-core_2.11" % "2.8.1"
 
   val jasypt = "org.jasypt" % "jasypt-spring31" % "1.9.2"
-  
+
   val antlr = "org.antlr" % "antlr4-runtime" % "4.3"
   val maxmind = "com.maxmind.geoip2" % "geoip2" % "0.8.0"
-  
+
   val ehcache = "net.sf.ehcache" % "ehcache" % "2.9.0"
 
   val quartz = "org.quartz-scheduler" % "quartz" % "2.2.1"
+
+  val gson = "com.google.code.gson" % "gson" % "2.3.1"
+  val httpclient = "org.apache.httpcomponents" % "httpclient" % "4.4.1"
+  val consulApi = "com.ecwid.consul" % "consul-api" % "1.1.0"
+
+  val jjwt = "io.jsonwebtoken" % "jjwt" % "0.4"
 }
 
 object ApiPlatformBuild extends Build {
@@ -112,17 +114,23 @@ object ApiPlatformBuild extends Build {
 
   override lazy val settings = super.settings ++ globalSettings
 
-  var jettyApp = Seq(jettyWebApp)
-  var jettyDeps = Seq(jettyServer, jettyServlet, jettyAjp)
+  val commonDeps = Seq(
+    servletSpec, jaxrs,
+    validationApi, hibernateValidator, commonsLang3,
+    jacksonCore, jacksonDatabind)
 
-  val deps = Seq(
+  val serverDeps = Seq(
+    log4j, slf4jlog4j12, grizzled,
     servletSpec,
     validationApi, hibernateValidator,
     commonsLang3, commonsIo, commonsCodec,
     springCore, springBeans, springContext, springContextSupport, springWeb, springTx, javaxInject,
     jacksonCore, jacksonDatabind, jacksonAnnotations, jacksonJaxRs, jacksonScala, jacksonJoda, jacksonYaml,
     jerseyServer, jerseySpring,
-    casbahCore, jasypt, antlr, maxmind, ehcache, quartz)
+    casbahCore, jasypt, antlr, maxmind, ehcache, quartz, gson, httpclient, consulApi, jjwt)
+
+  var jettyApp = Seq(jettyWebApp)
+  var jettyDeps = Seq(jettyServer, jettyServlet, jettyAjp)
 
   lazy val apiManager = Project(
     id = "api-manager-standalone",
@@ -135,17 +143,17 @@ object ApiPlatformBuild extends Build {
             "api-manager." + artifact.extension
           }
         }) ++
-        Seq(libraryDependencies ++= deps ++ jettyApp)) dependsOn (server) aggregate(common, server)
+        Seq(libraryDependencies ++= commonDeps ++ jettyApp)) dependsOn (server) aggregate (common, server)
 
   lazy val common = Project(
     id = "api-manager-common",
     base = file("modules/common"),
     settings = projectSettings ++
-      Seq(libraryDependencies ++= deps))
+      Seq(libraryDependencies ++= commonDeps))
 
   lazy val server = Project(
     id = "api-manager-server",
     base = file("modules/server"),
     settings = projectSettings ++
-      Seq(libraryDependencies ++= deps ++ jettyDeps)) dependsOn (common)
+      Seq(libraryDependencies ++= commonDeps ++ serverDeps ++ jettyDeps)) dependsOn (common)
 }

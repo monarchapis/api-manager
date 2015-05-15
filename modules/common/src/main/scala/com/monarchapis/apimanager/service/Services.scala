@@ -26,9 +26,9 @@ import com.monarchapis.apimanager.security.AuthorizationRequest
 import com.monarchapis.apimanager.security.ClientAuthenticationRequest
 import com.monarchapis.apimanager.security.CreateTokenRequest
 import com.monarchapis.apimanager.security.MessageDetails
+import com.monarchapis.apimanager.security.MessageDetailsList
 import com.monarchapis.apimanager.security.PermissionMessagesRequest
 import com.monarchapis.apimanager.security.TokenDetails
-import com.monarchapis.apimanager.security.MessageList
 
 object OrderDirection extends Enumeration {
   case class EValue(name: String) extends Val(name) {}
@@ -215,7 +215,11 @@ trait ServiceManager {
     token: String,
     callbackUri: Option[String])
 
-  def getPermissionMessages(request: PermissionMessagesRequest): MessageList
+  def getPermissionMessages(request: PermissionMessagesRequest): MessageDetailsList
+}
+
+trait LoadBalancer {
+  def getTarget(service: Service): Option[String]
 }
 
 class EntityEventAggregator[T]() {

@@ -139,11 +139,18 @@ class MongoDBServiceService @Inject() (
     .field("name", "name", FieldType.CI_STRING, true, accessor = (e) => e.name)
     .field("type", "type", FieldType.CS_STRING, true, accessor = (e) => e.`type`)
     .field("description", "description", FieldType.CS_STRING, true, accessor = (e) => e.description)
-    .field("accessControl", "accessControl", FieldType.BOOLEAN, false, accessor = (e) => e.accessControl)
-    .field("hostnames", "hostnames", FieldType.OTHER, false, accessor = (e) => toList(e.hostnames))
     .field("uriPrefix", "uriPrefix", FieldType.CS_STRING, true, accessor = (e) => e.uriPrefix)
     .field("versionLocation", "versionLocation", FieldType.CS_STRING, false, accessor = (e) => e.versionLocation)
     .field("defaultVersion", "defaultVersion", FieldType.CS_STRING, false, accessor = (e) => e.defaultVersion)
+    .field("hostnames", "hostnames", FieldType.OTHER, false, accessor = (e) => toList(e.hostnames))
+    .field("requestWeights", "requestWeights", FieldType.OTHER, false, accessor = (e) => {
+      val builder = MongoDBObject.newBuilder[String, Int]
+      if (e.requestWeights != null) e.requestWeights foreach {
+        case (key, value) => builder += key -> value
+      }
+      builder.result
+    })
+    .field("accessControl", "accessControl", FieldType.BOOLEAN, false, accessor = (e) => e.accessControl)
     .field("operations", "operations", FieldType.OTHER, false, accessor = (e) => {
       val builder = MongoDBList.newBuilder
       if (e.operations != null) {
@@ -225,8 +232,8 @@ class MongoDBServiceService @Inject() (
   }
 
   def getAccessControlled = {
-    val q = MongoDBObject("accessControl" -> true)
-    val data = collection.find(q)
+    //val q = MongoDBObject("accessControl" -> true)
+    val data = collection.find()
 
     data.toList.map(i => convert(i))
   }
@@ -258,16 +265,17 @@ class MongoDBServiceService @Inject() (
       id = o.get("_id").toString,
       name = expect[String](o.get("name")),
       `type` = optional[String](o.get("type")),
-      accessControl = o.getAsOrElse[Boolean]("accessControl", false),
-      hostnames = set[String](o.getAs[MongoDBList]("hostnames")),
+      description = optional[String](o.get("description")),
       uriPrefix = optional[String](o.get("uriPrefix")),
       versionLocation = optional[String](o.get("versionLocation")),
       defaultVersion = optional[String](o.get("defaultVersion")),
+      hostnames = set[String](o.getAs[MongoDBList]("hostnames")),
+      requestWeights = map[Int](o.getAs[DBObject]("requestWeights")),
+      accessControl = o.getAsOrElse[Boolean]("accessControl", false),
       operations = {
         val operations = o.getAs[MongoDBList]("operations").orNull
         convertOperations(operations)
       },
-      description = optional[String](o.get("description")),
       extended = map(o.getAs[DBObject]("extended")),
       createdBy = expect[String](o.get("createdBy")),
       createdDate = expect[DateTime](datetime(o.get("createdDate"))),

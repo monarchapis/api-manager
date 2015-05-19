@@ -128,7 +128,7 @@ paths:
             responses: 
                 200: 
                     description:    The paginated list of applications
-                    schema: 
+                    schema:
                         $ref: '#/definitions/ApplicationList'
         post: 
             tags: 
@@ -150,7 +150,7 @@ paths:
             responses:
                 201:
                     description:    The created application
-                    schema: 
+                    schema:
                         $ref: '#/definitions/Application'
     /applications/{id}:
         get: 
@@ -525,12 +525,12 @@ paths:
                     collectionFormat:   pipes
                     description:        The developer's external identifier
             responses: 
-                200: 
+                200:
                     description:    The paginated list of developers
                     schema: 
                         $ref: '#/definitions/DeveloperList'
-        post: 
-            tags: 
+        post:
+            tags:
                 - developers
             summary:        Create a new developer
             description:    TODO
@@ -547,7 +547,7 @@ paths:
             responses:
                 201:
                     description:    The created developer
-                    schema: 
+                    schema:
                         $ref: '#/definitions/Developer'
     /developers/{id}:
         get: 
@@ -561,11 +561,11 @@ paths:
                 -
                     $ref:               '#/parameters/entityId'
             responses: 
-                200: 
+                200:
                     description:    TODO
                     schema: 
                         $ref: '#/definitions/Developer'
-        put: 
+        put:
             tags: 
                 - developers
             summary:        Update a developer
@@ -582,12 +582,12 @@ paths:
                     required:           true
                     schema: 
                         $ref: '#/definitions/DeveloperUpdate'
-            responses: 
-                200: 
+            responses:
+                200:
                     description:    The updated developer
                     schema: 
                         $ref: '#/definitions/Developer'
-        delete: 
+        delete:
             tags: 
                 - developers
             summary:        Delete a developer
@@ -661,8 +661,8 @@ paths:
                     description:    The paginated list of environments
                     schema: 
                         $ref: '#/definitions/EnvironmentList'
-        post: 
-            tags: 
+        post:
+            tags:
                 - environments
             summary:        Create a new environment
             description:    TODO
@@ -679,10 +679,10 @@ paths:
             responses:
                 201:
                     description:    The created environment
-                    schema: 
+                    schema:
                         $ref: '#/definitions/Environment'
     /environments/{id}:
-        get: 
+        get:
             tags: 
                 - environments
             summary:        Load an environment
@@ -692,19 +692,19 @@ paths:
             parameters:
                 -
                     $ref: '#/parameters/entityId'
-            responses: 
-                200: 
+            responses:
+                200:
                     description:    TODO
-                    schema: 
+                    schema:
                         $ref: '#/definitions/Environment'
-        put: 
+        put:
             tags: 
                 - environments
             summary:        Update an environment
             description:    TODO
             operationId:    updateEnvironment
             x-resource-operation: update
-            parameters: 
+            parameters:
                 -
                     $ref: '#/parameters/entityId'
                 -
@@ -714,19 +714,19 @@ paths:
                     required:       true
                     schema: 
                         $ref: '#/definitions/EnvironmentUpdate'
-            responses: 
-                200: 
+            responses:
+                200:
                     description:    The updated environment
-                    schema: 
+                    schema:
                         $ref: '#/definitions/Environment'
-        delete: 
+        delete:
             tags: 
                 - environments
             summary:        Delete an environment
             description:    TODO
             operationId:    deleteEnvironment
             x-resource-operation: delete
-            parameters: 
+            parameters:
                 -
                     $ref: '#/parameters/entityId'
             responses:
@@ -774,12 +774,12 @@ paths:
                         type:               string
                     collectionFormat:   pipes
                     description:        The log entry message filter
-            responses: 
-                200: 
+            responses:
+                200:
                     description:    The paginated list of logEntries
-                    schema: 
+                    schema:
                         $ref: '#/definitions/LogEntryList'
-        post: 
+        post:
             tags: 
                 - logEntries
             summary:        Create a new log entry

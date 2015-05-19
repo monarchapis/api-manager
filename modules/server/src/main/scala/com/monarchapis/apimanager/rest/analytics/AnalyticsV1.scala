@@ -71,13 +71,13 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
 
   @Path("/{eventType}")
   @GET
-  def event(@PathParam("eventType") eventType: String) = {
+  def getEventDescriptor(@PathParam("eventType") eventType: String) = {
     analyticsService.event(eventType)
   }
 
   @Path("/{eventType}/events")
   @POST
-  def event(@PathParam("eventType") eventType: String, data: ObjectNode) = {
+  def collectEvent(@PathParam("eventType") eventType: String, data: ObjectNode) = {
     val environmentContext = EnvironmentContext.current
 
     taskExecutor.execute(new Runnable {
@@ -96,7 +96,7 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
 
   @Path("/{eventType}/events")
   @GET
-  def events(
+  def queryEvents(
     @PathParam("eventType") eventType: String,
     @QueryParam("start") start: String,
     @QueryParam("end") end: String,
@@ -114,7 +114,7 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
 
   @Path("/{eventType}/metrics/{metric}/{tier}/series")
   @GET
-  def metrics(
+  def queryMetrics(
     @PathParam("eventType") eventType: String,
     @PathParam("metric") metric: String,
     @PathParam("tier") tier: String,
@@ -138,7 +138,7 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
 
   @Path("/{eventType}/metrics/{metric}/{tier}/counts")
   @GET
-  def counts(
+  def queryCounts(
     @PathParam("eventType") eventType: String,
     @PathParam("metric") metric: String,
     @PathParam("tier") tier: String,
@@ -158,7 +158,7 @@ class AnalyticsResource @Inject() (analyticsService: AnalyticsService, taskExecu
 
   @Path("/{eventType}/metrics/{metric}/distinct")
   @GET
-  def distinct(
+  def queryDistinctValues(
     @PathParam("eventType") eventType: String,
     @PathParam("metric") metric: String,
     @QueryParam("start") start: String,

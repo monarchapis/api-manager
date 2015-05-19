@@ -17,18 +17,31 @@
 
 package com.monarchapis.apimanager.security
 
+import java.util.UUID
+
 import scala.collection.JavaConversions._
 import scala.util.control.Breaks.break
 import scala.util.control.Breaks.breakable
 import scala.util.matching.Regex
 
+import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang3.StringUtils
+import org.springframework.beans.factory.NoSuchBeanDefinitionException
+import org.springframework.beans.factory.annotation.Value
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.joda.JodaModule
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
 import com.monarchapis.apimanager.util._
 
 import grizzled.slf4j.Logging
+import io.jsonwebtoken.Claims
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
 import javax.inject.Inject
 
 object AuthenticationProcessorImpl {
@@ -45,6 +58,19 @@ object AuthenticationProcessorImpl {
     applicationUrl = "provider",
     companyName = "provider",
     companyUrl = "provider")
+
+  private val OBJECT_MAPPER = {
+    val mapper = new ObjectMapper
+
+    val jodaModule = new JodaModule
+    mapper.registerModule(jodaModule)
+
+    mapper.registerModule(DefaultScalaModule)
+    mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
+    mapper
+  }
 }
 
 class AuthenticationProcessorImpl(
@@ -86,6 +112,20 @@ class AuthenticationProcessorImpl(
 
   import AuthenticationProcessorImpl._
   import scala.util.control.Breaks._
+  import ClaimNames._
+
+  @Value("${jwt.base64Key}")
+  private val jwtBase64Key: String = null
+
+  private lazy val jwtKey = Base64.decodeBase64(jwtBase64Key)
+
+  private val loadBalancer: Option[LoadBalancer] = {
+    try {
+      Some(ApplicationContextProvider().getBean(classOf[LoadBalancer]))
+    } catch {
+      case e: NoSuchBeanDefinitionException => None
+    }
+  }
 
   private val uriConverter = new UriRegexConverter
 
@@ -93,7 +133,16 @@ class AuthenticationProcessorImpl(
     require(keyStore != null, "keyStore is required.")
     require(request != null, "request is required.")
 
-    val operationMatch = getOperation(request)
+    val (service, operationMatch) = if (request.performAuthorization) {
+      val service = getService(request)
+      val operation = service match {
+        case Some(service) => getOperation(service, request)
+        case None => None
+      }
+      (service, operation)
+    } else {
+      (None, None)
+    }
 
     var variableContext = operationMatch match {
       case Some(operationMatch) => {
@@ -294,51 +343,92 @@ class AuthenticationProcessorImpl(
 
           val provider = ProviderHolder.get
 
-          val apiContext = ApiContext(
-            application = ApplicationContext(
-              id = application.id,
-              name = Some(application.name),
-              extended = application.extended),
-            client = ClientContext(
-              id = client.id,
-              label = client.label,
-              permissions = if (client.isInstanceOf[Client])
-                permissionService.getPermissionNames(client.asInstanceOf[Client].clientPermissionIds, "client")
-              else Set.empty[String],
-              extended = if (client.isInstanceOf[Client]) client.asInstanceOf[Client].extended else Map()),
-            token = token,
-            principal = principal,
-            provider = provider match {
-              case Some(provider) => Some(ProviderContext(
-                id = provider.id,
-                label = provider.label))
-              case _ => None
-            })
+          val applicationContext = ApplicationContext(
+            id = application.id,
+            name = Some(application.name),
+            extended = application.extended)
+
+          val clientContext = ClientContext(
+            id = client.id,
+            label = client.label,
+            permissions = if (client.isInstanceOf[Client]) {
+              permissionService.getPermissionNames(client.asInstanceOf[Client].clientPermissionIds, "client")
+            } else { Set.empty[String] },
+            extended = if (client.isInstanceOf[Client]) client.asInstanceOf[Client].extended else Map())
+
+          val providerContext = provider match {
+            case Some(provider) => Some(ProviderContext(
+              id = provider.id,
+              label = provider.label))
+            case _ => None
+          }
+
+          val builder = Map.newBuilder[String, Any]
+
+          val now = System.currentTimeMillis / 1000
+          builder += Claims.ID -> StringUtils.replace(UUID.randomUUID.toString, "-", "")
+          builder += Claims.ISSUED_AT -> now
+          builder += Claims.EXPIRATION -> (now + 60)
+
+          principal match {
+            case Some(principal) => {
+              builder += Claims.SUBJECT -> principal.id
+              builder += PRINCIPAL -> Map(
+                "id" -> principal.id,
+                "context" -> principal.context)
+
+              for (claim <- principal.claims) {
+                builder += claim._1 -> claim._2
+              }
+            }
+            case None =>
+          }
+
+          token match {
+            case Some(token) => builder += TOKEN -> token
+            case None =>
+          }
+
+          builder += APPLICATION -> applicationContext
+          builder += CLIENT -> clientContext
+
+          providerContext match {
+            case Some(context) => builder += PROVIDER -> context
+            case None =>
+          }
+
+          val claims = builder.result
 
           if (request.performAuthorization) {
-            operationMatch match {
-              case Some(om) => {
-                val om = operationMatch.get
-                val oper = om._1
+            if (service.isDefined) {
+              if (service.get.accessControl) {
+                operationMatch match {
+                  case Some(om) => {
+                    val om = operationMatch.get
+                    val oper = om._1
 
-                if (!oper.delegatedPermissionIds.isEmpty && token.isEmpty) {
-                  throw new InvalidAccessTokenException("Your request did not contain a valid access token.")
-                }
+                    if (!oper.delegatedPermissionIds.isEmpty && token.isEmpty) {
+                      throw new InvalidAccessTokenException("Your request did not contain a valid access token.")
+                    }
 
-                var valid =
-                  (oper.clientPermissionIds.size == 0 && oper.delegatedPermissionIds.size == 0 && oper.claims.size == 0) ||
-                    (containsAny(oper.clientPermissionIds, client.clientPermissionIds) &&
-                      containsAny(oper.delegatedPermissionIds, permissionIds.getOrElse(Set.empty[String])) &&
-                      containsAny(oper.claims, principal match {
-                        case Some(principal) => principal.claims
-                        case _ => Map.empty[String, Set[String]]
-                      }))
+                    var valid =
+                      (oper.clientPermissionIds.size == 0 && oper.delegatedPermissionIds.size == 0 && oper.claims.size == 0) ||
+                        (containsAny(oper.clientPermissionIds, client.clientPermissionIds) &&
+                          containsAny(oper.delegatedPermissionIds, permissionIds.getOrElse(Set.empty[String])) &&
+                          containsAny(oper.claims, principal match {
+                            case Some(principal) => principal.claims
+                            case _ => Map.empty[String, Set[String]]
+                          }))
 
-                if (!valid) {
-                  throw new UnauthorizedOperationException()
+                    if (!valid) {
+                      throw new UnauthorizedOperationException()
+                    }
+                  }
+                  case _ => throw new NotFoundException()
                 }
               }
-              case _ => throw new NotFoundException()
+            } else {
+              throw new NotFoundException()
             }
           }
 
@@ -376,12 +466,52 @@ class AuthenticationProcessorImpl(
                   Some("LIM-0001"),
                   List(),
                   variableContext,
-                  Some(apiContext))
+                  Some(claims),
+                  Map.empty[String, String],
+                  None)
               }
             }
           }
 
-          AuthenticationResponse(200, None, None, None, None, List(), variableContext, Some(apiContext))
+          val target = if (service.isDefined && request.useLoadBalancer) {
+            val target = loadBalancer match {
+              case Some(loadBalancer) => loadBalancer.getTarget(service.get)
+              case None => None
+            }
+
+            if (target.isEmpty) {
+              error(s"No available target for service ${service.get.name}")
+
+              return AuthenticationResponse(
+                503,
+                Some("systemUnavailable"),
+                Some("The system is currently unavailable"),
+                Some("Please try again later."),
+                Some("SYS-0001"),
+                List(),
+                variableContext,
+                Some(claims),
+                Map.empty[String, String],
+                None)
+            }
+            target
+          } else {
+            None
+          }
+
+          val tokens = if (client.isInstanceOf[Client]) {
+            val jwtBuilder = Jwts.builder.setPayload(OBJECT_MAPPER.writeValueAsString(claims))
+            jwtBuilder.signWith(SignatureAlgorithm.HS256, jwtKey)
+
+            var jwt = jwtBuilder.compact
+
+            Map("jwt" -> jwt)
+          } else {
+            Map.empty[String, String]
+          }
+
+          AuthenticationResponse(200, None, None, None, None, List(),
+            variableContext, Some(claims), tokens, target)
         }
         case _ => {
           if (operationMatch.isDefined) {
@@ -391,7 +521,7 @@ class AuthenticationProcessorImpl(
             // Return OK if the resource operation is unprotected
             if (oper.clientPermissionIds.isEmpty && oper.delegatedPermissionIds.isEmpty && oper.claims.isEmpty) {
               return AuthenticationResponse(200, None, None, None, None, List(),
-                variableContext, None)
+                variableContext, None, Map.empty[String, String], None)
             }
           }
 
@@ -402,6 +532,31 @@ class AuthenticationProcessorImpl(
       case ae: AuthenticationException => {
         val provider = ProviderHolder.get
 
+        val builder = Map.newBuilder[String, Any]
+
+        val now = System.currentTimeMillis / 1000
+        builder += Claims.ID -> StringUtils.replace(UUID.randomUUID.toString, "-", "")
+        builder += Claims.ISSUED_AT -> now
+        builder += Claims.EXPIRATION -> (now + 60)
+
+        context.client match {
+          case Some(client) => {
+            builder += APPLICATION -> ApplicationContext(
+              id = client.applicationId)
+            builder += CLIENT -> ClientContext(
+              id = client.id,
+              label = client.label)
+          }
+          case _ =>
+        }
+
+        provider match {
+          case Some(provider) => builder += PROVIDER -> provider
+          case _ =>
+        }
+
+        val claims = builder.result
+
         AuthenticationResponse(
           ae.code,
           Some(ae.reason),
@@ -410,69 +565,58 @@ class AuthenticationProcessorImpl(
           Some(ae.errorCode),
           responseHeaders.result,
           variableContext,
-          context.client match {
-            case Some(client) => Some(ApiContext(
-              application = ApplicationContext(
-                id = client.applicationId),
-              client = ClientContext(
-                id = client.id,
-                label = client.label),
-              token = None,
-              provider = provider match {
-                case Some(provider) => Some(ProviderContext(
-                  id = provider.id,
-                  label = provider.label))
-                case _ => None
-              },
-              principal = None))
-            case _ => None
+          Some(claims),
+          Map.empty[String, String],
+          None)
+      }
+    }
+  }
+
+  private def getService(request: AuthenticationRequest) = {
+    var sortedServices = serviceService.getAccessControlled.sortBy(
+      service => uriConverter.getPatternLength(service.uriPrefix.getOrElse("")) * -1)
+
+    sortedServices find { service =>
+      {
+        (service.hostnames.size == 0 || service.hostnames.contains(request.host)) &&
+          (service.uriPrefix.isDefined && {
+            val regex = uriConverter.convertToRegex(service.uriPrefix.get, true)
+            regex.findFirstMatchIn(request.path).isDefined
           })
       }
     }
   }
 
-  private def getOperation(request: AuthenticationRequest): Option[(OperationMatcher, Regex.Match)] = {
-    if (request.performAuthorization) {
-      val services = serviceService.getAccessControlled filter { service =>
-        {
-          service.hostnames.size == 0 || service.hostnames.contains(request.host)
-        }
-      }
+  private def getOperation(service: Service, request: AuthenticationRequest): Option[(OperationMatcher, Regex.Match)] = {
+    val allOperations = List.newBuilder[OperationMatcher]
 
-      val allOperations = List.newBuilder[OperationMatcher]
+    allOperations ++= service.operations map { operation =>
+      OperationMatcher(
+        service.id,
+        service.name,
+        service.versionLocation match {
+          case Some(location) => StringUtils.split(location, ", ").toSeq
+          case _ => Seq.empty[String]
+        },
+        service.defaultVersion,
+        operation.name,
+        operation.method,
+        uriConverter.convertToRegex(service.uriPrefix.getOrElse("") + operation.uriPattern),
+        uriConverter.getPatternLength(operation.uriPattern),
+        operation.clientPermissionIds,
+        operation.delegatedPermissionIds,
+        operation.claims)
+    }
 
-      services foreach { service =>
-        {
-          allOperations ++= service.operations map { operation =>
-            OperationMatcher(
-              service.id,
-              service.name,
-              service.versionLocation match {
-                case Some(location) => StringUtils.split(location, ", ").toSeq
-                case _ => Seq.empty[String]
-              },
-              service.defaultVersion,
-              operation.name,
-              operation.method,
-              uriConverter.convertToRegex(service.uriPrefix.getOrElse("") + operation.uriPattern),
-              uriConverter.getPatternLength(operation.uriPattern),
-              operation.clientPermissionIds,
-              operation.delegatedPermissionIds,
-              operation.claims)
-          }
-        }
+    val operations = allOperations.result.sortBy(operation => operation.patternLength * -1)
 
-        val operations = allOperations.result.sortBy(operation => operation.patternLength * -1)
+    operations foreach { operation =>
+      {
+        if (operation.method == request.method) {
+          val regexMatch = operation.uriPattern.findFirstMatchIn(request.path)
 
-        operations foreach { operation =>
-          {
-            if (operation.method == request.method) {
-              val regexMatch = operation.uriPattern.findFirstMatchIn(request.path)
-
-              if (regexMatch.isDefined) {
-                return Some((operation, regexMatch.get))
-              }
-            }
+          if (regexMatch.isDefined) {
+            return Some((operation, regexMatch.get))
           }
         }
       }

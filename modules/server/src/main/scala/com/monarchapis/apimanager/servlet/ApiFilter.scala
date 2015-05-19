@@ -58,10 +58,11 @@ class ApiFilter extends Filter with Logging {
   @throws(classOf[IOException])
   @throws(classOf[ServletException])
   def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain) {
-    try {
-      val request = req.asInstanceOf[HttpServletRequest]
-      val response = res.asInstanceOf[HttpServletResponse]
+    val startTime = System.currentTimeMillis
+    val request = req.asInstanceOf[HttpServletRequest]
+    val response = res.asInstanceOf[HttpServletResponse]
 
+    try {
       val uri = request.getRequestURL.toString
 
       if (uri.endsWith("/swagger.json") || uri.endsWith("/swagger.yaml")) {
@@ -96,6 +97,12 @@ class ApiFilter extends Filter with Logging {
       BehindReverseProxyHolder.remove
       EnvironmentContext.remove
       ApiRequest.remove
+
+      if (isTraceEnabled) {
+        val endTime = System.currentTimeMillis
+        val diff = endTime - startTime
+        trace(s"Request to ${request.getRequestURL.toString} took ${diff}ms")
+      }
     }
   }
 
@@ -246,10 +253,10 @@ class ApiFilter extends Filter with Logging {
     val response = authenticationProcessor.authenticate(providerService, authenticationRequest)
 
     if (response.code == 200 || request.getMethod == "OPTIONS") {
-      response.context match {
-        case Some(context) => {
-          UserContext.current(context.provider match {
-            case Some(provider) => provider.label
+      response.claims match {
+        case Some(claims) => {
+          UserContext.current(claims.get(ClaimNames.PROVIDER) match {
+            case Some(provider: ProviderContext) => provider.label
             case _ => "provider"
           })
           (true, response)

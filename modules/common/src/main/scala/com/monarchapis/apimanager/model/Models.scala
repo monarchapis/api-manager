@@ -502,11 +502,12 @@ case class Service(
   @BeanProperty name: String,
   @BeanProperty `type`: Option[String],
   @BeanProperty description: Option[String],
-  @BooleanBeanProperty accessControl: Boolean = false,
-  @BeanProperty hostnames: Set[String] = Set(),
   @BeanProperty uriPrefix: Option[String] = None,
   @BeanProperty versionLocation: Option[String] = None,
   @BeanProperty defaultVersion: Option[String] = None,
+  @BeanProperty hostnames: Set[String] = Set(),
+  @BeanProperty requestWeights: Map[String, Int] = Map(),
+  @BooleanBeanProperty accessControl: Boolean = false,
   @BeanProperty operations: List[Operation] = List(),
   @BeanProperty flags: Set[String] = Set(),
   @BeanProperty extended: Map[String, Object] = Map(),
@@ -518,11 +519,12 @@ case class Service(
   def withName(name: String) = copy(name = name)
   def withType(`type`: Option[String]) = copy(`type` = `type`)
   def withDescription(description: Option[String]) = copy(description = description)
-  def withAccessControl(accessControl: Boolean) = copy(accessControl = accessControl)
-  def withHostnames(hostnames: Set[String]) = copy(hostnames = hostnames)
   def withUriPrefix(uriPrefix: Option[String]) = copy(uriPrefix = uriPrefix)
   def withVersionLocation(versionLocation: Option[String]) = copy(versionLocation = versionLocation)
   def withDefaultVersion(defaultVersion: Option[String]) = copy(defaultVersion = defaultVersion)
+  def withHostnames(hostnames: Set[String]) = copy(hostnames = hostnames)
+  def withRequestWeights(requestWeights: Map[String, Int]) = copy(requestWeights = requestWeights)
+  def withAccessControl(accessControl: Boolean) = copy(accessControl = accessControl)
   def withOperations(operations: List[Operation]) = copy(operations = operations)
   def withFlags(flags: Set[String]) = copy(flags = flags)
 }

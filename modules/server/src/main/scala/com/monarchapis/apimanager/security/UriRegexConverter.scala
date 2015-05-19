@@ -58,7 +58,7 @@ object UriRegexConverter {
 class UriRegexConverter {
   import UriRegexConverter._
 
-  def convertToRegex(uriPattern: String) = {
+  def convertToRegex(uriPattern: String, isPrefix: Boolean = false) = {
     val parts = StringUtils.split(uriPattern, '/')
     val sb = new StringBuilder
     val groupNames = Seq.newBuilder[String]
@@ -87,6 +87,10 @@ class UriRegexConverter {
           sb.append(next)
         }
       }
+    }
+    
+    if (isPrefix) {
+      sb.append("(/[^$]*)?")
     }
 
     sb.append('$')

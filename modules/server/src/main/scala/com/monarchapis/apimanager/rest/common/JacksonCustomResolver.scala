@@ -38,7 +38,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 @Produces(Array(MediaType.APPLICATION_JSON))
 class JacksonContextResolver extends ContextResolver[ObjectMapper] {
   private val mapper = {
-    val mapper = new ObjectMapper()
+    val mapper = new ObjectMapper
 
     val jodaModule = new JodaModule
     mapper.registerModule(jodaModule)

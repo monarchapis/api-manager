@@ -56,7 +56,7 @@ import grizzled.slf4j.Logging
 import javax.servlet.DispatcherType
 
 object StandaloneServer {
-  private val VERSION = "0.8.2"
+  private val VERSION = "0.8.3"
   private val SHUTDOWN_COMMAND = "SHUTDOWN"
 
   def main(args: Array[String]) {

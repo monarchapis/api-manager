@@ -125,6 +125,22 @@
 		id="mongoDbPrincipalClaimsService"
 		class="com.monarchapis.apimanager.service.mongodb.MongoDBPrincipalClaimsService" />
 	
+	<!-- Use Consul for Service Registration -->
+	<!--
+	<bean
+		id="consulClient"
+		class="com.ecwid.consul.v1.ConsulClient">
+		<constructor-arg value="${consul.agent.host}" />
+		<constructor-arg value="${consul.agent.port}" />
+	</bean>
+
+	<bean
+		id="consulLoadBalancer"
+		class="com.monarchapis.apimanager.service.loadbalancing.ConsulLoadBalancer">
+		<constructor-arg ref="consulClient" />
+	</bean>
+	-->
+	
 	<!-- BEGIN: Analytics configuration -->
 	<bean
 		id="analyticsConfigurationFactory"

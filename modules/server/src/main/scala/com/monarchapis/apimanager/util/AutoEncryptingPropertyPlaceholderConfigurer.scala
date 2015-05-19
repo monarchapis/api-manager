@@ -77,10 +77,17 @@ class AutoEncryptingPropertyPlaceholderConfigurer(stringEncryptor: StringEncrypt
 
         if (key == "encrpytion.base64Key" && StringUtils.isEmpty(value)) {
           logger.info(s"Initializing master encryption key")
-          val salt = new Array[Byte](16)
-          SecureRandom.getInstance("SHA1PRNG").nextBytes(salt)
-          val masterKeyEncoded = Base64.encodeBase64String(salt)
-          builder += s"$key=ENC(${stringEncryptor.encrypt(masterKeyEncoded)})"
+          val genkey = new Array[Byte](16)
+          SecureRandom.getInstance("SHA1PRNG").nextBytes(genkey)
+          val keyEncoded = Base64.encodeBase64String(genkey)
+          builder += s"$key=ENC(${stringEncryptor.encrypt(keyEncoded)})"
+          change = true
+        } else if (key == "jwt.base64Key" && StringUtils.isEmpty(value)) {
+          logger.info(s"Initializing JWT signing key")
+          val genkey = new Array[Byte](64)
+          SecureRandom.getInstance("SHA1PRNG").nextBytes(genkey)
+          val keyEncoded = Base64.encodeBase64String(genkey)
+          builder += s"$key=${keyEncoded}"
           change = true
         } else if (value.startsWith(AUTO_ENC_PREFIX) && value.endsWith(AUTO_ENC_SUFFIX)) {
           logger.info(s"Encrypting value for $key")

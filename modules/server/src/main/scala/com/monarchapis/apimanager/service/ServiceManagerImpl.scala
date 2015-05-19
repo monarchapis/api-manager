@@ -391,7 +391,7 @@ class ServiceManagerImpl(
     tokenService.delete(token.id)
   }
 
-  def getPermissionMessages(request: PermissionMessagesRequest): MessageList = {
+  def getPermissionMessages(request: PermissionMessagesRequest): MessageDetailsList = {
     val loadedMessages = scala.collection.mutable.Set[String]()
     val allMessages = scala.collection.mutable.Buffer[Message]();
 
@@ -436,7 +436,7 @@ class ServiceManagerImpl(
 
     val root = allMessages find { m => m.parentId.isEmpty }
 
-    MessageList(buildMessageDetails(allMessages, None, request.locales))
+    MessageDetailsList(buildMessageDetails(allMessages, None, request.locales))
   }
 
   private def buildMessageDetails(messages: scala.collection.mutable.Buffer[Message], parent: Option[String], locales: List[LocaleInfo]): List[MessageDetails] = {

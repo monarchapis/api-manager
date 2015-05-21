@@ -141,7 +141,7 @@ class MongoDBClientService @Inject() (
     ensureIndex(collection, MongoDBObject("applicationId" -> 1, "label_lc" -> 1), "client-by-label", true)
     ensureIndex(collection, MongoDBObject("apiKey" -> 1), "client-by-apiKey", true)
     ensureIndex(collection, MongoDBObject("label_lc" -> 1, "applicationName_lc" -> 1), "client-by-app-label")
-    ensureIndex(collection, MongoDBObject("applicationName_lc" -> 1), "client-by-app")
+    ensureIndex(collection, MongoDBObject("applicationName_lc" -> 1, "label_lc" -> 1), "client-by-app")
     // Sparse index by externalId
     ensureIndex(collection,
       MongoDBObject("externalId" -> 1),
@@ -222,7 +222,7 @@ class MongoDBClientService @Inject() (
     })
     .field("externalId", "externalId", FieldType.CS_STRING, false, accessor = (e) => NotSet.check(e.externalId.orNull))
 
-  protected override def defaultSort = MongoDBObject("label_lc" -> 1)
+  protected override def defaultSort = MongoDBObject("applicationName_lc" -> 1, "label_lc" -> 1)
 
   DisplayLabelSources.lookup += "clients" -> this
 

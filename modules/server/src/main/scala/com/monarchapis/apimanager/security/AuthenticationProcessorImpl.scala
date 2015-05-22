@@ -367,6 +367,8 @@ class AuthenticationProcessorImpl(
 
           val now = System.currentTimeMillis / 1000
           builder += Claims.ID -> StringUtils.replace(UUID.randomUUID.toString, "-", "")
+          builder += Claims.ISSUER -> "http://www.monarchapis.com/api-manager"
+          builder += Claims.AUDIENCE -> "http://www.monarchapis.com/api-producer"
           builder += Claims.ISSUED_AT -> now
           builder += Claims.EXPIRATION -> (now + 60)
 

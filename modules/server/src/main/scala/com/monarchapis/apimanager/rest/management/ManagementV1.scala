@@ -38,6 +38,7 @@ import com.monarchapis.apimanager.exception.NotAuthorizedException
 import com.monarchapis.apimanager.exception.NotFoundException
 import com.monarchapis.apimanager.security.ClaimSourceRegistry
 
+case class Authentication(username: String, password: String)
 case class SetPassword(password: String)
 case class Result(@BeanProperty result: String)
 
@@ -84,10 +85,7 @@ class RoleResource @Inject() (roleService: RoleService) extends Resource[Role] {
 @Path("/v1/environments")
 @Named
 class EnvironmentResource @Inject() (
-  environmentService: EnvironmentService,
-  applicationService: ApplicationService,
-  clientService: ClientService,
-  developerService: DeveloperService) extends Resource[Environment] {
+  environmentService: EnvironmentService) extends Resource[Environment] {
   require(environmentService != null, "environmentService is required")
 
   val resourceName = "environment"
@@ -112,7 +110,6 @@ class ApplicationResource @Inject() (
   val service = applicationService
 
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   override def collection(
     @Context uriInfo: UriInfo,
     @QueryParam("offset")@DefaultValue("0") offset: Integer,
@@ -327,7 +324,6 @@ class DeveloperResource @Inject() (
   val service = developerService
 
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   override def collection(
     @Context uriInfo: UriInfo,
     @QueryParam("offset")@DefaultValue("0") offset: Integer,
@@ -364,10 +360,8 @@ class DeveloperResource @Inject() (
 
   @Path("/authenticate")
   @POST
-  @Consumes(Array(MediaType.APPLICATION_FORM_URLENCODED))
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
-  def authenticate(@FormParam("username") username: String, @FormParam("password") password: String) = {
-    val developer = developerService.authenticate(username, password)
+  def authenticate(auth: Authentication) = {
+    val developer = developerService.authenticate(auth.username , auth.password)
     if (developer.isEmpty) throw new NotAuthorizedException(s"Could not authenticate developer")
     developer.get
   }
@@ -480,11 +474,12 @@ case class ConfigurationDescriptor(
 
 @Path("/v1/authenticators")
 @Named
+@Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
+@Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
 class AuthenticatorsResource @Inject() (authenticatorRegistry: AuthenticatorRegistry) {
   require(authenticatorRegistry != null, "authenticatorRegistry is required")
 
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def getAuthenticators() = ItemsWrapperResponse(authenticatorRegistry.names map { a =>
     {
       val authenticator = authenticatorRegistry(a).get
@@ -496,11 +491,12 @@ class AuthenticatorsResource @Inject() (authenticatorRegistry: AuthenticatorRegi
 
 @Path("/v1/policies")
 @Named
+@Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
+@Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
 class PoliciesResource @Inject() (policyRegistry: PolicyRegistry) {
   require(policyRegistry != null, "policyRegistry is required")
 
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def getPolicies() = ItemsWrapperResponse(policyRegistry.names map { a =>
     {
       val policy = policyRegistry(a).get
@@ -512,11 +508,12 @@ class PoliciesResource @Inject() (policyRegistry: PolicyRegistry) {
 
 @Path("/v1/claimSources")
 @Named
+@Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
+@Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
 class ClaimSourcesResource @Inject() (claimSourceRegistry: ClaimSourceRegistry) {
   require(claimSourceRegistry != null, "claimSourceRegistry is required")
 
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def getClaimSources() = ItemsWrapperResponse(claimSourceRegistry.names map { a =>
     {
       val claimSource = claimSourceRegistry(a).get
@@ -539,6 +536,8 @@ case class EnvironmentSummary(
 
 @Path("/v1/environment/summary")
 @Named
+@Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
+@Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
 class EnvironmentInfoResource @Inject() (
   environmentService: EnvironmentService,
   applicationService: ApplicationService,
@@ -550,7 +549,6 @@ class EnvironmentInfoResource @Inject() (
   userService: UserService,
   roleService: RoleService) {
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def getEnvironmentInfo() = {
     AuthorizationUtils.continueWithSystemAccess
     val envId = EnvironmentContext.current.id;
@@ -592,12 +590,13 @@ case class AuthorizationResponse(
 
 @Path("/v1/me")
 @Named
+@Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
+@Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
 class MeResource @Inject() (
   permissionService: PermissionService,
   authenticationService: AuthenticationService) {
   @Path("/permissions")
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON))
   def getPermissions() = {
     AuthorizationHolder.get match {
       case Some(authorization) => AuthorizationResponse(

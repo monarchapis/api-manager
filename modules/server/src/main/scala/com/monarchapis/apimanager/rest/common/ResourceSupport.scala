@@ -48,9 +48,9 @@ trait ResourceSupport extends Logging {
         if (!ignore.contains(key)) {
           val builder = List.newBuilder[String]
           for (v1 <- value.iterator) {
-        	  builder ++= StringUtils.split(v1, '|') map (v => v.trim)
+            builder ++= StringUtils.split(v1, '|') map (v => v.trim)
           }
-          
+
           filter += key -> builder.result
         }
       }
@@ -104,13 +104,14 @@ trait ResourceSupport extends Logging {
   }
 }
 
+@Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
+@Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
 abstract class Resource[T <: Entity] extends ResourceSupport {
   val service: BaseService[T]
 
   val entityClass: Class[T]
 
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def collection(
     @Context uriInfo: UriInfo,
     @QueryParam("offset")@DefaultValue("0") offset: Integer,
@@ -120,8 +121,6 @@ abstract class Resource[T <: Entity] extends ResourceSupport {
   }
 
   @POST
-  @Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def create(
     entity: T): T = {
     service.create(entity)
@@ -129,7 +128,6 @@ abstract class Resource[T <: Entity] extends ResourceSupport {
 
   @Path("/{id}")
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def load(@PathParam("id") id: String) = {
     val resource = service.load(id)
     if (resource.isEmpty) throw new NotFoundException(s"Could not find $resourceName $id")
@@ -138,7 +136,6 @@ abstract class Resource[T <: Entity] extends ResourceSupport {
 
   @Path("/multi/{ids}")
   @GET
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def load(
     @Context uriInfo: UriInfo,
     @PathParam("ids") ids: String,
@@ -152,8 +149,6 @@ abstract class Resource[T <: Entity] extends ResourceSupport {
   /*
   @Path("/{id}")
   @PUT
-  @Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def update(@PathParam("id") id: String, entity: T) = {
     val resource = service.update(entity.withId(id).asInstanceOf[T])
     if (resource.isEmpty) throw new WebApplicationException(Response.Status.NOT_FOUND)
@@ -163,8 +158,6 @@ abstract class Resource[T <: Entity] extends ResourceSupport {
 
   @Path("/{id}") //@HttpMethod("PATCH")
   @PUT
-  @Consumes(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def patch(
     @PathParam("id") id: String,
     body: InputStream) = {
@@ -176,7 +169,6 @@ abstract class Resource[T <: Entity] extends ResourceSupport {
 
   @Path("/{id}")
   @DELETE
-  @Produces(Array(MediaType.APPLICATION_JSON, MediaType.TEXT_XML))
   def delete(@PathParam("id") id: String) = {
     val resource = service.load(id)
     if (resource.isEmpty) throw new NotFoundException(s"Could not find $resourceName $id")

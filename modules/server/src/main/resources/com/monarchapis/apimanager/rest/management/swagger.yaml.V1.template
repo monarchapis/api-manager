@@ -211,6 +211,109 @@ paths:
                     description:    The deleted application
                     schema:
                         $ref: '#/definitions/Application'
+    /applications/{id}/clients:
+        get: 
+            tags: 
+                - applications
+            summary:        Returns the clients for an application
+            description:    TODO
+            operationId:    getApplicationClients
+            x-resource-operation: getClients
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+            responses: 
+                200: 
+                    description:    TODO
+                    schema: 
+                        $ref: '#/definitions/ClientList'
+    /applications/{id}/developers:
+        get: 
+            tags: 
+                - applications
+            summary:        Returns the developers for an application
+            description:    TODO
+            operationId:    getApplicationDevelopers
+            x-resource-operation: getDevelopers
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+            responses: 
+                200: 
+                    description:    TODO
+                    schema: 
+                        $ref: '#/definitions/DeveloperList'
+    /applications/{id}/developers/{developerId}:
+        get:
+            tags:
+                - applications
+            summary:        Returns a single developer associated with the application
+            description:    TODO
+            operationId:    getApplicationDeveloper
+            x-resource-operation: getDeveloper
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               developerId
+                    in:                 path
+                    type:               string
+                    description:        The developer identifier
+            responses: 
+                200:
+                    description:    The application developer
+                    schema: 
+                        $ref: '#/definitions/Developer'
+        put:
+            tags:
+                - applications
+            summary:        Adds a developer to an application
+            description:    TODO
+            operationId:    addApplicationToDeveloper
+            x-resource-operation: addApplication
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               developerId
+                    in:                 path
+                    type:               string
+                    description:        The developer identifier
+            responses:
+                200:
+                    description:    The application developer
+                    schema:
+                        $ref: '#/definitions/Developer'
+        delete:
+            tags:
+                - applications
+            summary:        Removes a developer from an application
+            description:    TODO
+            operationId:    removeDeveloperFromApplication
+            x-resource-operation: removeDeveloper
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               developerId
+                    in:                 path
+                    type:               string
+                    description:        The developer identifier
+            responses:
+                200:
+                    description:    The application developer
+                    schema:
+                        $ref: '#/definitions/Result'
     # CLIENTS
     /clients:
         get:
@@ -600,6 +703,135 @@ paths:
             responses:
                 200:
                     description:    The deleted developer
+                    schema:
+                        $ref: '#/definitions/Developer'
+    /developers/{id}/password:
+        put:
+            tags:
+                - developers
+            summary:        Resets a developer's password
+            description:    TODO
+            operationId:    setDeveloperPassword
+            x-resource-operation: setPassword
+            parameters:
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/SetPassword'
+            responses:
+                200:
+                    description:    The authenticated developer
+                    schema:
+                        $ref: '#/definitions/Result'
+    /developers/{id}/applications:
+        get:
+            tags:
+                - developers
+            summary:        Returns the applications the developer is associated with
+            description:    TODO
+            operationId:    getDeveloperApplications
+            x-resource-operation: getApplications
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+            responses: 
+                200:
+                    description:    The paginated list of developer applications
+                    schema: 
+                        $ref: '#/definitions/ApplicationList'
+    /developers/{id}/applications/{applicationId}:
+        get:
+            tags:
+                - developers
+            summary:        Returns a single applications the developer is associated with
+            description:    TODO
+            operationId:    getDeveloperApplication
+            x-resource-operation: getApplication
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               applicationId
+                    in:                 path
+                    type:               string
+                    description:        The application identifier
+            responses: 
+                200:
+                    description:    The developer application
+                    schema: 
+                        $ref: '#/definitions/Application'
+        put:
+            tags:
+                - developers
+            summary:        Adds an application to a developer
+            description:    TODO
+            operationId:    addDeveloperToApplication
+            x-resource-operation: addApplication
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               applicationId
+                    in:                 path
+                    type:               string
+                    description:        The application identifier
+            responses:
+                200:
+                    description:    The authenticated developer
+                    schema:
+                        $ref: '#/definitions/Application'
+        delete:
+            tags:
+                - developers
+            summary:        Removes an application from a developer
+            description:    TODO
+            operationId:    removeDeveloperFromApplication
+            x-resource-operation: removeApplication
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+                -
+                    $ref:               '#/parameters/entityId'
+                -
+                    name:               applicationId
+                    in:                 path
+                    type:               string
+                    description:        The application identifier
+            responses:
+                200:
+                    description:    The authenticated developer
+                    schema:
+                        $ref: '#/definitions/Result'
+    /developers/authenticate:
+        post:
+            tags: 
+                - developers
+            summary:        Authenticate a developer
+            description:    TODO
+            operationId:    authenticateDeveloper
+            x-resource-operation: authenticate
+            parameters:
+                -
+                    name:               body
+                    in:                 body
+                    description:        TODO
+                    required:           true
+                    schema:
+                        $ref: '#/definitions/Authentication'
+            responses:
+                200:
+                    description:    The authenticated developer
                     schema:
                         $ref: '#/definitions/Developer'
     # ENVIRONMENTS
@@ -2330,7 +2562,8 @@ paths:
                 - users
             summary:        Sets a user's password
             description:    TODO
-            operationId:    setPassword
+            operationId:    setUserPassword
+            x-resource-operation: setPassword
             parameters:
                 -
                     $ref:               '#/parameters/entityId'
@@ -2350,11 +2583,10 @@ paths:
     /authenticators:
         get: 
             tags: 
-                - authenticators
+                - modules
             summary:        Returns a list of the registered authenticators
             description:    TODO
             operationId:    listAuthenticators
-            x-resource-operation: list
             parameters:
                 -
                     $ref:               '#/parameters/environmentId'
@@ -2367,11 +2599,26 @@ paths:
     /policies:
         get: 
             tags: 
-                - policies
+                - modules
             summary:        Returns a list of the registered policies
             description:    TODO
             operationId:    listPolicies
-            x-resource-operation: list
+            parameters:
+                -
+                    $ref:               '#/parameters/environmentId'
+            responses: 
+                200: 
+                    description:    TODO
+                    schema: 
+                        $ref: '#/definitions/ConfigurableList'
+    # CLAIMS SOURCES
+    /claimSources:
+        get: 
+            tags: 
+                - modules
+            summary:        Returns a list of the registered claims sources
+            description:    TODO
+            operationId:    listClaimSources
             parameters:
                 -
                     $ref:               '#/parameters/environmentId'
@@ -3327,6 +3574,15 @@ definitions:
                 type:           array
                 items:
                     $ref:           '#/definitions/User'
+    Authentication:
+        required:
+            - username
+            - password
+        properties:
+            username:
+                type:           string
+            password:
+                type:           string
     SetPassword:
         required:
             - password
@@ -3528,10 +3784,7 @@ tags:
         name:           users
         x-type:         resource
     -
-        name:           authenticators
-        x-type:         resource
-    -
-        name:           policies
+        name:           modules
         x-type:         resource
     -
         name:           me

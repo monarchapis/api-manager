@@ -377,7 +377,7 @@ class AuthenticationProcessorImpl(
               builder += Claims.SUBJECT -> principal.id
               builder += PRINCIPAL -> Map(
                 "id" -> principal.id,
-                "context" -> principal.context)
+                "name" -> principal.context)
 
               for (claim <- principal.claims) {
                 builder += claim._1 -> claim._2

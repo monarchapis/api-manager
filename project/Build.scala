@@ -1,6 +1,5 @@
 import sbt._
 import Keys._
-import com.earldouglas.xsbtwebplugin.WebPlugin
 
 object BuildSettings {
   import Dependencies._
@@ -43,7 +42,7 @@ object Dependencies {
   val slf4jlog4j12 = "org.slf4j" % "slf4j-log4j12" % slf4jVersion
   val slf4jSimpleTest = slf4jSimple % "test"
   val log4j = "log4j" % "log4j" % "1.2.17"
-  val grizzled = "org.clapper" % "grizzled-slf4j_2.10" % "1.0.2"
+  val grizzled = "org.clapper" % "grizzled-slf4j_2.11" % "1.0.2"
 
   val springVersion = "3.2.9.RELEASE"
   val springGroupId = "org.springframework"
@@ -85,7 +84,7 @@ object Dependencies {
   val jettyServlet = "org.eclipse.jetty" % "jetty-servlet" % jettyVersion
   val jettyAjp = "org.eclipse.jetty" % "jetty-ajp" % "8.1.15.v20140411"
   val jettyServerTest = jettyServer % "test"
-  val jettyWebApp = "org.eclipse.jetty" % "jetty-webapp" % jettyVersion % "container;compile"
+  val jettyWebApp = "org.eclipse.jetty" % "jetty-webapp" % jettyVersion % "compile"
 
   val servletSpec = "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
 
@@ -136,14 +135,7 @@ object ApiPlatformBuild extends Build {
     id = "api-manager-standalone",
     base = file("."),
     settings = projectSettings ++
-      WebPlugin.webSettings ++
-      Seq(
-        artifactName := { (config: sbt.ScalaVersion, module: ModuleID, artifact: Artifact) =>
-          {
-            "api-manager." + artifact.extension
-          }
-        }) ++
-        Seq(libraryDependencies ++= commonDeps ++ jettyApp)) dependsOn (server) aggregate (common, server)
+      Seq(libraryDependencies ++= commonDeps ++ jettyApp ++ jettyDeps)) dependsOn (common, server)
 
   lazy val common = Project(
     id = "api-manager-common",
@@ -155,5 +147,5 @@ object ApiPlatformBuild extends Build {
     id = "api-manager-server",
     base = file("modules/server"),
     settings = projectSettings ++
-      Seq(libraryDependencies ++= commonDeps ++ serverDeps ++ jettyDeps)) dependsOn (common)
+      Seq(libraryDependencies ++= commonDeps ++ serverDeps)) dependsOn (common)
 }

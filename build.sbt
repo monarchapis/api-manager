@@ -13,8 +13,6 @@ unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
 
 packageArchetype.java_application
 
-port in container.Configuration := 8000
-
 gruntSettings
 
 name in Universal := "monarch-" + version.value

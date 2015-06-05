@@ -1,6 +1,7 @@
 package com.monarchapis.apimanager.service.loadbalancing
 
 import java.security.SecureRandom
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Buffer
@@ -22,15 +23,13 @@ import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 
 class ConsulLoadBalancer(client: ConsulClient) extends LoadBalancer with Runnable with Logging {
-  var index: Option[Long] = None
-  var running = false
-  var targets: Map[String, ServiceRegistration] = Map.empty[String, ServiceRegistration]
-  var thread: Thread = null
+  private var index: Option[Long] = None
+  private var running = false
+  private var targets: Map[String, ServiceRegistration] = Map.empty[String, ServiceRegistration]
+  private var thread: Thread = null
 
-  val counterMap = HashMap[String, RoundRobinCounter]()
-  val tagPartitionsCache = HashMap[String, TagPartitions]()
-
-  val random = new SecureRandom
+  private val tagPartitionsCache = HashMap[String, TagPartitions]()
+  private val random = new SecureRandom
 
   @PostConstruct
   def startPolling {
@@ -55,7 +54,7 @@ class ConsulLoadBalancer(client: ConsulClient) extends LoadBalancer with Runnabl
           val counter = registration.getCounter("default")
           val instances = registration.instances
           if (instances.size > 0) {
-            Some(instances(counter.next(instances.size)))
+            Some(instances(counter.getAndIncrement % instances.size))
           } else {
             None
           }
@@ -68,13 +67,13 @@ class ConsulLoadBalancer(client: ConsulClient) extends LoadBalancer with Runnabl
 
           if (buffer.size > 0) {
             val counter = registration.getCounter(resolvedTag)
-            Some(buffer(counter.next(buffer.size)))
+            Some(buffer(counter.getAndIncrement % buffer.size))
           } else {
             val buffer = tagPartitions("default")
 
             if (buffer.size > 0) {
               val counter = registration.getCounter("default")
-              Some(buffer(counter.next(buffer.size)))
+              Some(buffer(counter.getAndIncrement % buffer.size))
             } else {
               None
             }
@@ -225,13 +224,13 @@ case class TagPartitions(
 
 case class ServiceRegistration(
   val instances: List[ServiceInstance],
-  val counters: HashMap[String, RoundRobinCounter] = HashMap()) {
+  val counters: HashMap[String, AtomicInteger] = HashMap()) {
 
   def getCounter(tag: String) = {
     counters.get(tag) match {
       case Some(counter) => counter
       case None => {
-        val counter = new RoundRobinCounter
+        val counter = new AtomicInteger
         counters += tag -> counter
 
         counter
@@ -260,15 +259,5 @@ case class ServiceInstance(
     } else { "" }
 
     s"$id @ $host:$port$tagString"
-  }
-}
-
-class RoundRobinCounter {
-  private var counter: Int = 0
-
-  def next(upperBoundary: Int) = {
-    var i = counter % upperBoundary
-    counter += 1
-    i
   }
 }

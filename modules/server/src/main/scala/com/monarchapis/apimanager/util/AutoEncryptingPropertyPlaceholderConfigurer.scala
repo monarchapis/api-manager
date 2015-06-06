@@ -58,9 +58,14 @@ class AutoEncryptingPropertyPlaceholderConfigurer(stringEncryptor: StringEncrypt
     super.setLocation(location)
   }
 
-  override def setLocations(locations: Array[Resource]) {
+  override def setLocations(locations: Resource*) {
     locations.foreach(location => encryptFile(location))
-    super.setLocations(locations)
+    super.setLocations(locations: _*)
+  }
+
+  def setLocations(locations: java.util.List[Resource]) {
+    locations.foreach(location => encryptFile(location))
+    super.setLocations(locations: _*)
   }
 
   private def encryptFile(location: Resource) {

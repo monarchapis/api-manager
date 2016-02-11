@@ -28,8 +28,8 @@ import javax.inject.Named
 
 @Named
 class InternalClaimSource @Inject() (
-  principalProfileService: PrincipalProfileService,
-  principalClaimsService: PrincipalClaimsService) extends ClaimSource {
+    principalProfileService: PrincipalProfileService,
+    principalClaimsService: PrincipalClaimsService) extends ClaimSource {
   val name = "internal"
   val displayName = "Internal"
 
@@ -52,7 +52,7 @@ class InternalClaimSource @Inject() (
 
         principalProfileService.findByName(profile) match {
           case Some(profile) => {
-            recurseClaims(profile.id, userId, builder, processed)
+            recurseClaims(profile.id, userId, builder, processed, true)
           }
           case _ =>
         }
@@ -63,16 +63,18 @@ class InternalClaimSource @Inject() (
     builder.result
   }
 
-  private def recurseClaims(profileId: String, principal: String, builder: Builder[Claim, Set[Claim]], processed: collection.mutable.Set[String]) {
+  private def recurseClaims(profileId: String, principal: String, builder: Builder[Claim, Set[Claim]], processed: collection.mutable.Set[String], top: Boolean) {
     // Prevent infinite recursion
     if (processed.contains(principal)) return
 
     processed += principal
 
-    principalClaimsService.findByName(profileId, principal) match {
+    val principalClaims = if (top) principalClaimsService.findByName(profileId, principal) else principalClaimsService.load(principal)
+
+    principalClaims match {
       case Some(claims) => {
         for (v <- claims.inherits) {
-          recurseClaims(profileId, v, builder, processed)
+          recurseClaims(profileId, v, builder, processed, false)
         }
 
         for (e <- claims.claims) {

@@ -18,24 +18,28 @@
 package com.monarchapis.apimanager.service.mongodb
 
 import scala.collection.mutable.Builder
-
 import org.joda.time.DateTime
-
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
 import com.monarchapis.apimanager.util._
 import com.mongodb.casbah.Imports._
-
 import grizzled.slf4j.Logging
 import javax.inject.Inject
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.cache.CacheManager
 
 class MongoDBEnvironmentService @Inject() (
-  val connectionManager: MongoDBConnectionManager,
-  val multitenantConnectionManager: MultitenantMongoDBConnectionManager,
-  val logService: LogService) extends EnvironmentService with ServiceSupport[Environment] with MongoDBNameProvider with Logging {
+    val connectionManager: MongoDBConnectionManager,
+    val multitenantConnectionManager: MultitenantMongoDBConnectionManager,
+    val logService: LogService,
+    val cacheManager: CacheManager) extends EnvironmentService with ServiceSupport[Environment] with MongoDBNameProvider with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(multitenantConnectionManager != null, "multitenantConnectionManager is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
+  
+  val environmentsCache = cacheManager.getCache("environments")
+  val databasesCache = cacheManager.getCache("databases")
 
   info(s"$this")
 
@@ -105,6 +109,16 @@ class MongoDBEnvironmentService @Inject() (
     }
   }
 
+  protected override def handleCacheEvict(environment: Environment) {
+    environmentsCache.evict(environment.id)
+    databasesCache.evict(environment.id)
+  }
+
+  @Cacheable(value = Array("environments"), key = "#id")
+  override def load(id: String) = {
+    super.load(id)
+  }
+
   def lookupIdByName(name: String): Option[String] = {
     val q = MongoDBObject("name_lc" -> name.toLowerCase)
     val o = collection.findOne(q, MongoDBObject("_id" -> 1))
@@ -115,6 +129,7 @@ class MongoDBEnvironmentService @Inject() (
     }
   }
 
+  @Cacheable(value = Array("databases"), key = "#id")
   def getDatabases(id: String) = {
     val q = MongoDBObject("_id" -> new ObjectId(id))
     val d = collection.findOne(q, MongoDBObject("systemDatabase" -> 1, "analyticsDatabase" -> 1, "database" -> 1))

@@ -17,9 +17,9 @@
 
 package com.monarchapis.apimanager.service.mongodb
 
-import scala.math.BigDecimal.int2bigDecimal
-
 import org.joda.time.DateTime
+import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
 
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
@@ -30,11 +30,15 @@ import javax.inject.Inject
 
 class MongoDBPlanService @Inject() (
   val connectionManager: MultitenantMongoDBConnectionManager,
-  val logService: LogService) extends PlanService with ServiceSupport[Plan] with Logging {
+  val logService: LogService,
+  val cacheManager: CacheManager) extends PlanService with ServiceSupport[Plan] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  private val cache = cacheManager.getCache("plans")
 
   protected val entityName = "plan"
   protected val displayName = "plan"
@@ -69,6 +73,13 @@ class MongoDBPlanService @Inject() (
 
       list
     })
+
+  protected override def handleCacheEvict(plan: Plan) {
+    cache.evict(plan.id)
+  }
+
+  @Cacheable(value = Array("plans"), key = "#id")
+  override def load(id: String) = super.load(id)
 
   protected override def defaultSort = MongoDBObject("name_lc" -> 1)
 

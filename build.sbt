@@ -5,9 +5,9 @@ import NativePackagerHelper._
 
 name := "api-manager"
 
-version := "0.8.3"
+version := "0.8.4"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_))
 

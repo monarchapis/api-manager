@@ -18,6 +18,8 @@
 package com.monarchapis.apimanager.service.mongodb
 
 import org.joda.time.DateTime
+import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
 
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
@@ -30,12 +32,16 @@ import javax.inject.Inject
 class MongoDBProviderService @Inject() (
   val connectionManager: MultitenantMongoDBConnectionManager,
   val encryptionManager: EncryptionManager,
-  val logService: LogService) extends ProviderService with ServiceSupport[Provider] with Logging {
+  val logService: LogService,
+  val cacheManager: CacheManager) extends ProviderService with ServiceSupport[Provider] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(encryptionManager != null, "encryptionManager is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  val cacheByApiKey = cacheManager.getCache("providersByApiKey")
 
   protected val entityName = "provider"
   protected val displayName = "provider"
@@ -80,10 +86,32 @@ class MongoDBProviderService @Inject() (
 
   def getDisplayLabels(ids: Set[String]): Map[String, String] = getDisplayLabels(ids, "label")
 
-  def findByApiKey(apiKey: String) = {
+  protected override def handleCacheEvict(provider: Provider) {
+    cacheByApiKey.evict(provider.apiKey)
+  }
+
+  def findByApiKey(apiKey: String): Option[Provider] = {
+    val cacheable = AuthorizationUtils.can(EntityAction.READ_SENSITIVE, entityName)
+
+    if (cacheable) {
+      val ret = cacheByApiKey.get(apiKey, classOf[Provider])
+
+      if (ret != null) {
+        return Some(ret)
+      }
+    }
+
     val q = MongoDBObject("apiKey" -> encryptionManager.encrypt(apiKey))
     val entity = create(collection.findOne(q))
-    if (entity.isDefined) checkReadAccess(entity.get)
+
+    if (entity.isDefined) {
+      checkReadAccess(entity.get)
+
+      if (cacheable) {
+        cacheByApiKey.put(apiKey, entity.get)
+      }
+    }
+
     entity
   }
 

@@ -93,25 +93,18 @@ class MongoDBRoleService @Inject() (
   }
 
   def setUserRole(user: User, roleId: Option[String]): Boolean = {
-    val db = collection.getDB
-    db.requestStart
+    val q = MongoDBObject("members" -> user.id)
+    val u = MongoDBObject("$pull" -> MongoDBObject("members" -> user.id))
+    collection.update(q, u, false, false, WriteConcern.FsyncSafe)
 
-    try {
-      val q = MongoDBObject("members" -> user.id)
-      val u = MongoDBObject("$pull" -> MongoDBObject("members" -> user.id))
-      collection.update(q, u, false, false, WriteConcern.FsyncSafe)
-
-      roleId match {
-        case Some(roleId) => {
-          val q = MongoDBObject("_id" -> new ObjectId(roleId))
-          val u = MongoDBObject("$addToSet" -> MongoDBObject("members" -> user.id))
-          val result = collection.update(q, u, false, false, WriteConcern.FsyncSafe)
-          result.getN() > 0
-        }
-        case _ => false
+    roleId match {
+      case Some(roleId) => {
+        val q = MongoDBObject("_id" -> new ObjectId(roleId))
+        val u = MongoDBObject("$addToSet" -> MongoDBObject("members" -> user.id))
+        val result = collection.update(q, u, false, false, WriteConcern.FsyncSafe)
+        result.getN() > 0
       }
-    } finally {
-      db.requestDone
+      case _ => false
     }
   }
 

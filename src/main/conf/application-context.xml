@@ -7,12 +7,13 @@
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:cache="http://www.springframework.org/schema/cache"
 	xsi:schemaLocation="
-    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
     http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
 
 	<context:annotation-config />
+	<cache:annotation-driven />
 	
 	<bean
 		id="applicationContextProvider"
@@ -28,13 +29,10 @@
 	<import resource="context-services.xml" />
 	<import resource="context-security.xml" />
 	
-	<!-- Scans the classpath of this application for components to deploy as beans -->
-	<context:component-scan base-package="com.monarchapis.apimanager.rest.ext" />
+	<!-- REST controllers -->
 	<context:component-scan base-package="com.monarchapis.apimanager.rest" />
 	
-	<!--
-		Event Processors 
-	-->
+	<!-- Event Processors -->
 	<context:component-scan base-package="com.monarchapis.apimanager.event" />
 	
 	<!--

@@ -18,22 +18,30 @@
 package com.monarchapis.apimanager.service.mongodb
 
 import org.joda.time.DateTime
+import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
+
 import com.monarchapis.apimanager.exception._
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
 import com.mongodb.casbah.Imports._
+
 import grizzled.slf4j.Logging
 import javax.inject.Inject
 
 class MongoDBPrincipalClaimsService @Inject() (
-  val connectionManager: MultitenantMongoDBConnectionManager,
-  val principalProfileService: PrincipalProfileService,
-  val logService: LogService) extends PrincipalClaimsService with ServiceSupport[PrincipalClaims] with Logging {
+    val connectionManager: MultitenantMongoDBConnectionManager,
+    val principalProfileService: PrincipalProfileService,
+    val logService: LogService,
+    val cacheManager: CacheManager) extends PrincipalClaimsService with ServiceSupport[PrincipalClaims] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(principalProfileService != null, "principalProfileService is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  val cache = cacheManager.getCache("principalClaims")
 
   protected val entityName = "principalClaims"
   protected val displayName = "principal claims"
@@ -63,7 +71,7 @@ class MongoDBPrincipalClaimsService @Inject() (
 
       if (e.claims != null) {
         e.claims foreach {
-          case (key, values) => builder += key -> toList(values)
+          case (key, values) => builder += encodeKey(key) -> toList(values)
         }
       }
 
@@ -83,6 +91,15 @@ class MongoDBPrincipalClaimsService @Inject() (
 
   EntityEventAggregator.principalProfile += onPrincipalProfileChange
 
+  protected override def handleCacheEvict(principalClaims: PrincipalClaims) {
+    cache.evict(principalClaims.id)
+    cache.evict(principalClaims.profileId + "-" + principalClaims.name)
+  }
+
+  @Cacheable(value = Array("principalClaims"), key = "#id")
+  override def load(id: String) = super.load(id)
+
+  @Cacheable(value = Array("principalClaims"), key = "#profileId.concat('-').concat(#name)")
   def findByName(profileId: String, name: String): Option[PrincipalClaims] = {
     val q = MongoDBObject("profileId" -> profileId, "name_lc" -> name.toLowerCase)
     val entity = create(collection.findOne(q))
@@ -92,8 +109,11 @@ class MongoDBPrincipalClaimsService @Inject() (
 
   private def onPrincipalProfileChange(principalProfile: PrincipalProfile, eventType: String) {
     eventType match {
-      case "predelete" => if (exists(Map("profileId" -> List(principalProfile.id)))) {
-        throw new InvalidParamaterException("These principal claims cannot be deleted because it is being referenced by a profile.")
+      case "predelete" => {
+        // Cascading delete
+        val q = MongoDBObject("profileId" -> principalProfile.id)
+        collection.remove(q, WriteConcern.Acknowledged)
+        cache.clear
       }
       case _ =>
     }
@@ -112,7 +132,7 @@ class MongoDBPrincipalClaimsService @Inject() (
           case Some(o) => {
             for (key <- o.keys) {
               val values = o.getAs[MongoDBList](key).get map (v => v.asInstanceOf[String]) toSet;
-              builder += (key -> values)
+              builder += (decodeKey(key) -> values)
             }
           }
           case _ =>

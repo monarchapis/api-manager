@@ -6,8 +6,8 @@ object BuildSettings {
   import Resolvers._
 
   val buildOrganization = "com.monarchapis"
-  val buildVersion = "0.8.3"
-  val buildScalaVersion = "2.11.6"
+  val buildVersion = "0.8.4"
+  val buildScalaVersion = "2.11.7"
 
   val globalSettings = Seq(
     organization := buildOrganization,
@@ -19,6 +19,7 @@ object BuildSettings {
       junit, scalatest, mockito,
       jodaTime, jodaConvert),
     resolvers := Seq(
+      typesafeRepo,
       scalaToolsRepo,
       sonatypeRepo,
       ecwidRepo))
@@ -30,6 +31,7 @@ object Resolvers {
   val sonatypeRepo = "Sonatype Release" at "http://oss.sonatype.org/content/repositories/releases"
   val scalaToolsRepo = "Scala Tools" at "http://scala-tools.org/repo-snapshots/"
   val ecwidRepo = "ECWID" at "http://nexus.ecwid.com/content/groups/public"
+  val typesafeRepo = "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases/"
 }
 
 object Dependencies {
@@ -37,14 +39,14 @@ object Dependencies {
   val scalatest = "org.scalatest" % "scalatest_2.11" % "2.2.5" % "test"
   val mockito = "org.mockito" % "mockito-all" % "1.10.19" % "test"
 
-  val slf4jVersion = "1.7.12"
+  val slf4jVersion = "1.7.15"
   val slf4jSimple = "org.slf4j" % "slf4j-simple" % slf4jVersion
   val slf4jlog4j12 = "org.slf4j" % "slf4j-log4j12" % slf4jVersion
   val slf4jSimpleTest = slf4jSimple % "test"
   val log4j = "log4j" % "log4j" % "1.2.17"
   val grizzled = "org.clapper" % "grizzled-slf4j_2.11" % "1.0.2"
 
-  val springVersion = "4.1.6.RELEASE"
+  val springVersion = "4.2.4.RELEASE"
   val springGroupId = "org.springframework"
   val springCore = springGroupId % "spring-core" % springVersion
   val springBeans = springGroupId % "spring-beans" % springVersion
@@ -96,7 +98,8 @@ object Dependencies {
   val antlr = "org.antlr" % "antlr4-runtime" % "4.5"
   val maxmind = "com.maxmind.geoip2" % "geoip2" % "2.2.0"
 
-  val ehcache = "net.sf.ehcache" % "ehcache" % "2.10.0"
+  val ehcache = "net.sf.ehcache" % "ehcache-core" % "2.6.11"
+  val ehcacheJgroups = "net.sf.ehcache" % "ehcache-jgroupsreplication" % "1.7"
 
   val quartz = "org.quartz-scheduler" % "quartz" % "2.2.1"
 
@@ -128,7 +131,7 @@ object ApiPlatformBuild extends Build {
     springCore, springBeans, springContext, springContextSupport, springWeb, springTx, javaxInject,
     jacksonCore, jacksonDatabind, jacksonAnnotations, jacksonJaxRs, jacksonScala, jacksonJoda, jacksonYaml,
     jerseyServer, jerseySpring,
-    casbahCore, jasypt, antlr, maxmind, ehcache, quartz, guava, gson, httpclient, consulApi, jjwt)
+    casbahCore, jasypt, antlr, maxmind, ehcache, ehcacheJgroups, quartz, guava, gson, httpclient, consulApi, jjwt)
 
   var jettyApp = Seq(jettyWebApp)
   var jettyDeps = Seq(jettyServer, jettyServlet, jettyAjp)

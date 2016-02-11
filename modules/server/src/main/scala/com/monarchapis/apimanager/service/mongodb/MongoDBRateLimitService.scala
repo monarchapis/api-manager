@@ -40,8 +40,8 @@ object MongoDBRateLimitService {
 }
 
 class MongoDBRateLimitService(
-  connectionManager: MultitenantMongoDBConnectionManager,
-  timezone: DateTimeZone) extends RateLimitService with MongoDBUtils with Logging {
+    connectionManager: MultitenantMongoDBConnectionManager,
+    timezone: DateTimeZone) extends RateLimitService with MongoDBUtils with Logging {
 
   import JulianUtils._
 
@@ -69,57 +69,54 @@ class MongoDBRateLimitService(
   })
 
   def checkQuotas(applicationId: String, requestWeight: Option[BigDecimal], quotas: List[Quota]) {
+    if (quotas.isEmpty) {
+      return
+    }
+
     val conn = connectionManager(EnvironmentContext.current.systemDatabase)
     val now = System.currentTimeMillis / 1000
 
-    conn.requestStart
+    quotas foreach { quote =>
+      {
+        val unit = quote.timeUnit
+        val julian = convertUnitToJulian(unit)(now, timezone)
+        val count = conn(unitCollections(unit)).findOne(
+          MongoDBObject(
+            unit -> julian,
+            "aid" -> applicationId))
 
-    try {
-      conn.requestEnsureConnection
-
-      quotas foreach { quote =>
-        {
-          val unit = quote.getTimeUnit.toString
-          val julian = convertUnitToJulian(unit)(now, timezone)
-          val count = conn(unitCollections(unit)).findOne(
-            MongoDBObject(
-              unit -> julian,
-              "aid" -> applicationId))
-
-          count match {
-            case Some(count) => {
-              count.getAs[Int]("n") match {
-                case Some(n) => {
-                  if (n >= quote.requestCount * 1000) {
-                    throw new BadRequestException(s"You have exceeded your maximum allowed requests per $unit")
-                  }
+        count match {
+          case Some(count) => {
+            count.getAs[Int]("n") match {
+              case Some(n) => {
+                if (n >= quote.requestCount * 1000) {
+                  throw new BadRequestException(s"You have exceeded your maximum allowed requests per $unit")
                 }
-                case _ =>
               }
+              case _ =>
             }
-            case _ =>
           }
+          case _ =>
         }
       }
+    }
 
-      val weight = (requestWeight match {
-        case Some(weight) => (weight * 1000).toInt
-        case _ => 1000
-      })
-      val inc = $inc("n" -> weight)
+    val weight = (requestWeight match {
+      case Some(weight) => (weight * 1000).toInt
+      case _ => 1000
+    })
+    val inc = $inc("n" -> weight)
 
-      rateUnits foreach { unit =>
-        {
-          val julian = convertUnitToJulian(unit)(now, timezone)
-          conn(unitCollections(unit)).update(
-            MongoDBObject(
-              unit -> julian,
-              "aid" -> applicationId),
-            inc, true, false)
-        }
+    quotas foreach { quota =>
+      {
+        val unit = quota.timeUnit
+        val julian = convertUnitToJulian(unit)(now, timezone)
+        conn(unitCollections(unit)).update(
+          MongoDBObject(
+            unit -> julian,
+            "aid" -> applicationId),
+          inc, true, false)
       }
-    } finally {
-      conn.requestDone
     }
   }
 

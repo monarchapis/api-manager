@@ -2,7 +2,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="
-    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 	<!-- -->
 	<!-- Configuration for encryptor, based on environment variables. -->
 	<!-- -->
@@ -33,7 +33,7 @@
 	<bean id="propertyConfigurer"
 		class="com.monarchapis.apimanager.util.AutoEncryptingPropertyPlaceholderConfigurer">
 		<constructor-arg ref="configurationEncryptor" />
-		<property name="locations">
+		<property name="encryptedLocations">
 			<list>
 				<value>file:#{systemProperties['monarch.config']}/monarch-cluster.properties</value>
 				<value>file:#{systemProperties['monarch.config']}/monarch-node.properties</value>

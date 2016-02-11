@@ -18,3 +18,5 @@ node_modules
 api-management.js
 api-management.min.js
 templates.handlebars.js
+conf
+logs

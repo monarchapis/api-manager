@@ -397,6 +397,14 @@ trait MongoDBUtils extends Logging {
     builder.result
   }
 
+  protected def encodeKey(key: String) = {
+    key.replace("\\", "\\\\").replace("$", "\\u0024").replace(".", "\\u002e")
+  }
+
+  protected def decodeKey(key: String) = {
+    key.replace("\\u002e", ".").replace("\\u0024", "$").replace("\\\\", "\\")
+  }
+
   def long(a: AnyRef): Option[Long] = {
     a match {
       case v: java.lang.Integer => Some(v.longValue)
@@ -423,15 +431,19 @@ trait MongoDBUtils extends Logging {
   }
 
   protected def ensureIndex(collection: MongoCollection, fields: MongoDBObject, name: String, unique: Boolean = false) {
+    val options = MongoDBObject(
+      "name" -> name,
+      "unique" -> unique)
+
     try {
-      collection.ensureIndex(fields, name, unique)
+      collection.createIndex(fields, options)
     } catch {
       case wce: MongoException => {
         // Drop and recreate the index if the spec has changed 
         if (wce.getCode == 86) {
           info(s"Recreating index '$name' on collection ${collection.name}")
           collection.dropIndex(name)
-          collection.ensureIndex(fields, name, unique)
+          collection.createIndex(fields, options)
         } else {
           throw wce
         }

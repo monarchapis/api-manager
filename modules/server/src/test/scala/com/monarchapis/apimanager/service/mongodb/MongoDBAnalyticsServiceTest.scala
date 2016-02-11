@@ -260,11 +260,6 @@ indexes     :
 
   val connectionManager = new BasicMongoDBConnectionManager("localhost:27017", "", "test-analytics")
 
-  val databaseReaderFactory = new MaxMindGeoIP2DatabaseReaderFactory(
-    new FileSystemResource("/devhome/captech-innovates/workspace/api-manager/src/main/conf/GeoLite2-City.mmdb"))
-  val databaseReader = databaseReaderFactory.getObject
-  val eventProcessorRegistry = new EventProcessorRegistry(new EventValidator, new MaxMindGeoIP2EventProcessor(databaseReader))
-
   DisplayLabelSources.lookup += "applications" -> new DisplayLabel {
     def getDisplayLabels(ids: Set[String]) = Map("1" -> "test app")
   }

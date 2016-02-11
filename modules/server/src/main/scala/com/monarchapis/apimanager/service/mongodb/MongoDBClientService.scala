@@ -21,6 +21,8 @@ import scala.collection.mutable.Builder
 
 import org.apache.commons.lang3.StringUtils
 import org.joda.time.DateTime
+import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
 
 import com.monarchapis.apimanager.exception._
 import com.monarchapis.apimanager.model._
@@ -37,14 +39,18 @@ class MongoDBClientService @Inject() (
   val permissionService: PermissionService,
   val environmentService: EnvironmentService,
   val encryptionManager: EncryptionManager,
-  val logService: LogService) extends ClientService with ServiceSupport[Client] with Logging {
+  val logService: LogService,
+  val cacheManager: CacheManager) extends ClientService with ServiceSupport[Client] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(applicationService != null, "applicationService is required")
   require(permissionService != null, "permissionService is required")
   require(encryptionManager != null, "encryptionManager is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  val cacheByApiKey = cacheManager.getCache("clientsByApiKey")
 
   protected val entityName = "client"
   protected val displayName = "client"
@@ -262,10 +268,32 @@ class MongoDBClientService @Inject() (
     }
   }
 
-  def findByApiKey(apiKey: String) = {
+  protected override def handleCacheEvict(client: Client) {
+    cacheByApiKey.evict(client.apiKey)
+  }
+
+  def findByApiKey(apiKey: String): Option[Client] = {
+    val cacheable = AuthorizationUtils.can(EntityAction.READ_SENSITIVE, entityName)
+
+    if (cacheable) {
+      val ret = cacheByApiKey.get(apiKey, classOf[Client])
+
+      if (ret != null) {
+        return Some(ret)
+      }
+    }
+
     val q = MongoDBObject("apiKey" -> encryptionManager.encrypt(apiKey))
     val entity = create(collection.findOne(q))
-    if (entity.isDefined) checkReadAccess(entity.get)
+
+    if (entity.isDefined) {
+      checkReadAccess(entity.get)
+
+      if (cacheable) {
+        cacheByApiKey.put(apiKey, entity.get)
+      }
+    }
+
     entity
   }
 

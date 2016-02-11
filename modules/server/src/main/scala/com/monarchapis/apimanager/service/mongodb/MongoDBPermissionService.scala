@@ -20,23 +20,27 @@ package com.monarchapis.apimanager.service.mongodb
 import org.apache.commons.lang3.StringUtils
 import org.bson.types.ObjectId
 import org.joda.time.DateTime
-
 import com.monarchapis.apimanager.exception._
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
 import com.mongodb.casbah.Imports._
-
 import grizzled.slf4j.Logging
 import javax.inject.Inject
+import org.springframework.cache.CacheManager
 
 class MongoDBPermissionService @Inject() (
   val connectionManager: MultitenantMongoDBConnectionManager,
   val messageService: MessageService,
-  val logService: LogService) extends PermissionService with ServiceSupport[Permission] with Logging {
+  val logService: LogService,
+  val cacheManager: CacheManager) extends PermissionService with ServiceSupport[Permission] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  val cachePermissionNames = cacheManager.getCache("permissionNames")
+  val cachePermissionIds = cacheManager.getCache("permissionIds")
 
   protected val entityName = "permission"
   protected val displayName = "permission"
@@ -85,13 +89,20 @@ class MongoDBPermissionService @Inject() (
     create(collection.findOne(q))
   }
 
+  protected override def handleCacheEvict(permission: Permission) {
+    cachePermissionNames.evict("user:" + permission.id)
+    cachePermissionIds.evict("user:" + permission.name)
+    cachePermissionNames.evict("client:" + permission.id)
+    cachePermissionIds.evict("client:" + permission.name)
+  }
+
   def getPermissionNames(permissionIds: Set[String], scope: String): Set[String] = {
     val nameBuilder = Set.newBuilder[String]
-    var idBuilder = Set.newBuilder[String]
+    val idBuilder = Set.newBuilder[String]
 
     val subnames = scala.collection.mutable.Map.empty[String, scala.collection.mutable.Set[String]]
 
-    val objectIds = permissionIds foreach { p =>
+    permissionIds foreach { p =>
       val idx = p.indexOf(':')
 
       val id = if (idx != -1) {
@@ -110,30 +121,48 @@ class MongoDBPermissionService @Inject() (
       }
 
       if (ObjectId.isValid(id)) {
-        idBuilder += id
+        val name = cachePermissionNames.get(scope + ":" + id, classOf[String])
+
+        if (name != null) {
+          if (subnames.contains(id)) {
+            subnames(id) foreach {
+              subname => nameBuilder += name + ':' + subname
+            }
+          } else {
+            nameBuilder += name
+          }
+        } else {
+          idBuilder += id
+        }
       } else {
         nameBuilder += id
       }
     }
 
-    val q = MongoDBObject(
-      "_id" -> MongoDBObject("$in" -> idBuilder.result.map(id => new ObjectId(id))),
-      "scope" -> MongoDBObject("$in" -> List(scope, "both")))
-    val permissionNames = collection.find(
-      q,
-      MongoDBObject("name" -> 1))
+    var result = idBuilder.result
 
-    permissionNames foreach { o =>
-      {
-        val id = o.get("_id").toString
-        val name = o.getAs[String]("name").get
+    if (result.size > 0) {
+      val q = MongoDBObject(
+        "_id" -> MongoDBObject("$in" -> result.map(id => new ObjectId(id))),
+        "scope" -> MongoDBObject("$in" -> List(scope, "both")))
+      val permissionNames = collection.find(
+        q,
+        MongoDBObject("name" -> 1))
 
-        if (subnames.contains(id)) {
-          subnames(id) foreach {
-            subname => nameBuilder += name + ':' + subname
+      permissionNames foreach { o =>
+        {
+          val id = o.get("_id").toString
+          val name = o.getAs[String]("name").get
+          cachePermissionNames.put(scope + ":" + id, name)
+          cachePermissionIds.put(scope + ":" + name, id)
+
+          if (subnames.contains(id)) {
+            subnames(id) foreach {
+              subname => nameBuilder += name + ':' + subname
+            }
+          } else {
+            nameBuilder += name
           }
-        } else {
-          nameBuilder += name
         }
       }
     }
@@ -143,11 +172,11 @@ class MongoDBPermissionService @Inject() (
 
   def getPermissionIds(permissionNames: Set[String], scope: String): Set[String] = {
     val nameBuilder = Set.newBuilder[String]
-    var idBuilder = Set.newBuilder[String]
+    val idBuilder = Set.newBuilder[String]
 
     val subnames = scala.collection.mutable.Map.empty[String, scala.collection.mutable.Set[String]]
 
-    val objectIds = permissionNames foreach { p =>
+    permissionNames foreach { p =>
       val idx = p.indexOf(':')
 
       val name = if (idx != -1) {
@@ -165,27 +194,45 @@ class MongoDBPermissionService @Inject() (
         p
       }
 
-      nameBuilder += name
-    }
+      val id = cachePermissionIds.get(scope + ":" + name, classOf[String])
 
-    val q = MongoDBObject(
-      "name_lc" -> MongoDBObject("$in" -> nameBuilder.result.map(name => name.toLowerCase)),
-      "scope" -> MongoDBObject("$in" -> List(scope, "both")))
-    val permissionIds = collection.find(
-      q,
-      MongoDBObject("name" -> 1))
-
-    permissionIds foreach { o =>
-      {
-        val id = o.get("_id").toString
-        val name = o.getAs[String]("name").get
-
+      if (id != null) {
         if (subnames.contains(name)) {
           subnames(name) foreach {
             subname => idBuilder += id + ':' + subname
           }
         } else {
           idBuilder += id
+        }
+      } else {
+        nameBuilder += name
+      }
+    }
+
+    val result = nameBuilder.result
+
+    if (result.size > 0) {
+      val q = MongoDBObject(
+        "name_lc" -> MongoDBObject("$in" -> nameBuilder.result.map(name => name.toLowerCase)),
+        "scope" -> MongoDBObject("$in" -> List(scope, "both")))
+      val permissionIds = collection.find(
+        q,
+        MongoDBObject("name" -> 1))
+
+      permissionIds foreach { o =>
+        {
+          val id = o.get("_id").toString
+          val name = o.getAs[String]("name").get
+          cachePermissionNames.put(scope + ":" + id, name)
+          cachePermissionIds.put(scope + ":" + name, id)
+
+          if (subnames.contains(name)) {
+            subnames(name) foreach {
+              subname => idBuilder += id + ':' + subname
+            }
+          } else {
+            idBuilder += id
+          }
         }
       }
     }

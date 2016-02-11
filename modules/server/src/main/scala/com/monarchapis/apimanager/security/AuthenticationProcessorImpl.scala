@@ -28,6 +28,7 @@ import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.NoSuchBeanDefinitionException
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.cache.CacheManager
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -74,17 +75,18 @@ object AuthenticationProcessorImpl {
 }
 
 class AuthenticationProcessorImpl(
-  applicationService: ApplicationService,
-  permissionService: PermissionService,
-  tokenService: TokenService,
-  planService: PlanService,
-  rateLimitService: RateLimitService,
-  serviceService: ServiceService,
-  authenticatorRegistry: AuthenticatorRegistry,
-  policyRegistry: PolicyRegistry,
-  claimSourceRegistry: ClaimSourceRegistry,
-  versionExtractor: VersionExtractor,
-  accessTokenTypes: Set[String] = Set()) extends AuthenticationProcessor with Logging {
+    applicationService: ApplicationService,
+    permissionService: PermissionService,
+    tokenService: TokenService,
+    planService: PlanService,
+    rateLimitService: RateLimitService,
+    serviceService: ServiceService,
+    authenticatorRegistry: AuthenticatorRegistry,
+    policyRegistry: PolicyRegistry,
+    claimSourceRegistry: ClaimSourceRegistry,
+    versionExtractor: VersionExtractor,
+    cacheManager: CacheManager,
+    accessTokenTypes: Set[String] = Set()) extends AuthenticationProcessor with Logging {
 
   @Inject def this(
     applicationService: ApplicationService,
@@ -97,6 +99,7 @@ class AuthenticationProcessorImpl(
     policyRegistry: PolicyRegistry,
     claimSourceRegistry: ClaimSourceRegistry,
     versionExtractor: VersionExtractor,
+    cacheManager: CacheManager,
     accessTokenTypes: java.util.Set[String]) = this(
     applicationService,
     permissionService,
@@ -108,6 +111,7 @@ class AuthenticationProcessorImpl(
     policyRegistry,
     claimSourceRegistry,
     versionExtractor,
+    cacheManager,
     if (accessTokenTypes != null) accessTokenTypes.toSet else null)
 
   import AuthenticationProcessorImpl._
@@ -449,9 +453,9 @@ class AuthenticationProcessorImpl(
               val quotas = application.planId match {
                 case Some(planId) => planService.load(planId) match {
                   case Some(plan) => plan.quotas
-                  case _ => List()
+                  case _ => List.empty
                 }
-                case _ => List()
+                case _ => List.empty
               }
 
               rateLimitService.checkQuotas(
@@ -477,7 +481,7 @@ class AuthenticationProcessorImpl(
 
           val target = if (service.isDefined && request.useLoadBalancer) {
             val target = loadBalancer match {
-              case Some(loadBalancer) => loadBalancer.getTarget(service.get)
+              case Some(loadBalancer) => loadBalancer.getTarget(service.get, request, claims)
               case None => None
             }
 
@@ -516,6 +520,8 @@ class AuthenticationProcessorImpl(
             variableContext, Some(claims), tokens, target)
         }
         case _ => {
+          // TODO check if service requires client authentication
+
           if (operationMatch.isDefined) {
             val om = operationMatch.get
             val oper = om._1
@@ -575,8 +581,7 @@ class AuthenticationProcessorImpl(
   }
 
   private def getService(request: AuthenticationRequest) = {
-    var sortedServices = serviceService.getAccessControlled.sortBy(
-      service => uriConverter.getPatternLength(service.uriPrefix.getOrElse("")) * -1)
+    var sortedServices = serviceService.getAccessControlled
 
     sortedServices find { service =>
       {

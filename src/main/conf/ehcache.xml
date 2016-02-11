@@ -4,8 +4,8 @@
 	monitoring="autodetect" 
 	dynamicConfig="true"
 	maxBytesLocalHeap="150M">
-    <defaultCache
-    	eternal="true"
+	<defaultCache
+		eternal="true"
 		maxElementsInMemory="100"
 		overflowToDisk="false" />
 	
@@ -13,5 +13,60 @@
 		name="credentialCache"
 		maxBytesLocalHeap="5M"
 		timeToLiveSeconds="300"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="global"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="databases"
+		maxBytesLocalHeap="1M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="environments"
+		maxBytesLocalHeap="1M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="applications"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="plans"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="providersByApiKey"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="clientsByApiKey"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="principalProfiles"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="principalClaims"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="permissionNames"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU" />
+	<cache
+		name="permissionIds"
+		maxBytesLocalHeap="5M"
+		timeToLiveSeconds="0"
 		memoryStoreEvictionPolicy="LRU" />
 </ehcache>

@@ -42,7 +42,7 @@ class UriRegexConverterTest extends FlatSpec with Matchers with MockitoSugar {
     actual.regex should equal("^/collection/([^/]+?)$")
   }
 
-  it should "replace path variables with customer regex expressions" in {
+  it should "replace path variables with custom regex expressions" in {
     val actual = converter.convertToRegex("/collection/{id: [a-zA-Z][a-zA-Z_0-9]}")
     actual.regex should equal("^/collection/([a-zA-Z][a-zA-Z_0-9])$")
   }
@@ -68,7 +68,7 @@ class UriRegexConverterTest extends FlatSpec with Matchers with MockitoSugar {
     actual should equal(13)
   }
 
-  it should "determine the pattern length with customer regex expressions" in {
+  it should "determine the pattern length with custom regex expressions" in {
     val actual = converter.getPatternLength("/collection/{id: [a-zA-Z][a-zA-Z_0-9]}")
     actual should equal(13)
   }

@@ -19,25 +19,30 @@ package com.monarchapis.apimanager.service.mongodb
 
 import org.apache.commons.lang3.StringUtils
 import org.joda.time.DateTime
-
 import com.monarchapis.apimanager.exception._
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.security.UriRegexConverter
 import com.monarchapis.apimanager.service._
 import com.mongodb.casbah.Imports._
-
 import grizzled.slf4j.Logging
 import javax.inject.Inject
+import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
 
 class MongoDBServiceService @Inject() (
-  val connectionManager: MultitenantMongoDBConnectionManager,
-  val permissionService: PermissionService,
-  val logService: LogService) extends ServiceService with ServiceSupport[Service] with Logging {
+    val connectionManager: MultitenantMongoDBConnectionManager,
+    val permissionService: PermissionService,
+    val logService: LogService,
+    val cacheManager: CacheManager) extends ServiceService with ServiceSupport[Service] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(permissionService != null, "permissionService is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  private val globalCache = cacheManager.getCache("global")
+  private val uriConverter = new UriRegexConverter
 
   protected val entityName = "service"
   protected val displayName = "service"
@@ -231,11 +236,22 @@ class MongoDBServiceService @Inject() (
     }
   }
 
-  def getAccessControlled = {
-    //val q = MongoDBObject("accessControl" -> true)
-    val data = collection.find()
+  protected override def handleCacheEvict(service: Service) {
+    globalCache.evict("allServices")
+  }
 
-    data.toList.map(i => convert(i))
+  def getAccessControlled: List[Service] = {
+    val cached = globalCache.get("allServices", classOf[List[Service]])
+
+    if (cached != null) {
+      cached
+    } else {
+      val data = collection.find().toList.map(i => convert(i))
+      val ret = data.sortBy(
+        service => uriConverter.getPatternLength(service.uriPrefix.getOrElse("")) * -1)
+      globalCache.put("allServices", ret)
+      ret
+    }
   }
 
   private def convert(o: Operation): DBObject = {

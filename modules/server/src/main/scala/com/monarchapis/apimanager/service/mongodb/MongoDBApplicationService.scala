@@ -18,6 +18,8 @@
 package com.monarchapis.apimanager.service.mongodb
 
 import org.joda.time.DateTime
+import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
 
 import com.monarchapis.apimanager.exception._
 import com.monarchapis.apimanager.model._
@@ -31,13 +33,17 @@ class MongoDBApplicationService @Inject() (
   val connectionManager: MultitenantMongoDBConnectionManager,
   val planService: PlanService,
   val environmentService: EnvironmentService,
-  val logService: LogService) extends ApplicationService with ServiceSupport[Application] with Logging {
+  val logService: LogService,
+  val cacheManager: CacheManager) extends ApplicationService with ServiceSupport[Application] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(planService != null, "planService is required")
   require(environmentService != null, "environmentService is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  private val cache = cacheManager.getCache("applications")
 
   protected val entityName = "application"
   protected val displayName = "application"
@@ -90,6 +96,13 @@ class MongoDBApplicationService @Inject() (
   DisplayLabelSources.lookup += "applications" -> this
 
   def getDisplayLabels(ids: Set[String]): Map[String, String] = getDisplayLabels(ids, "name")
+
+  protected override def handleCacheEvict(application: Application) {
+    cache.evict(application.id)
+  }
+
+  @Cacheable(value = Array("applications"), key = "#id")
+  override def load(id: String) = super.load(id)
 
   EntityEventAggregator.plan += onPlanChange
 

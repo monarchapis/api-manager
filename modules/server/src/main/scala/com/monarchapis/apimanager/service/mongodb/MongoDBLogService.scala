@@ -47,7 +47,7 @@ class MongoDBLogService @Inject() (
     debug("Initializing log entries")
     val collection = getCollection(db)
     ensureIndex(collection, MongoDBObject("timestamp" -> -1), "logEntry-by-timestamp", false)
-    ensureIndex(collection, MongoDBObject("level" -> 1, "timestamp" -> -1), "logEntry-by-timestamp", false)
+    ensureIndex(collection, MongoDBObject("level" -> 1, "timestamp" -> -1), "logEntry-by-level", false)
   })
 
   protected val labelField = null

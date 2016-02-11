@@ -415,6 +415,7 @@ trait ServiceSupport[T <: Entity] extends MongoDBUtils {
     val s = MongoDBObject("$set" -> setBuilder.result, "$unset" -> unsetBuilder.result)
 
     val res = collection.update(q, s, false, false, WriteConcern.FsyncSafe)
+    handleCacheEvict(entity)
 
     if (res.getN != 1) {
       return None
@@ -479,6 +480,7 @@ trait ServiceSupport[T <: Entity] extends MongoDBUtils {
 
     if (!s.isEmpty) {
       val res = collection.update(q, s, false, false, WriteConcern.FsyncSafe)
+      handleCacheEvict(check.get)
 
       if (res.getN != 1) {
         return None
@@ -545,6 +547,7 @@ trait ServiceSupport[T <: Entity] extends MongoDBUtils {
     val s = MongoDBObject("$set" -> o)
 
     val res = collection.update(q, s, false, false, WriteConcern.FsyncSafe)
+    handleCacheEvict(check.get)
 
     if (res.getN != 1) {
       return None
@@ -566,6 +569,8 @@ trait ServiceSupport[T <: Entity] extends MongoDBUtils {
 
     ret
   }
+  
+  protected def handleCacheEvict(entity: T) {}
 
   protected def checkUpdateAccess(entity: T, delta: Delta[T] = null) {}
 
@@ -586,6 +591,7 @@ trait ServiceSupport[T <: Entity] extends MongoDBUtils {
     aggregator.apply(check.get, "predelete")
 
     val res = collection.remove(q, WriteConcern.FsyncSafe)
+    handleCacheEvict(check.get)
 
     if (res.getN == 1) {
       aggregator.apply(check.get, "delete")

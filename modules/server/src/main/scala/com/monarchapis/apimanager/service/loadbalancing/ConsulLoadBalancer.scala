@@ -2,25 +2,22 @@ package com.monarchapis.apimanager.service.loadbalancing
 
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks.break
 import scala.util.control.Breaks.breakable
-
 import org.apache.commons.lang3.StringUtils
 import org.joda.time.DateTime
-
 import com.ecwid.consul.v1.ConsistencyMode
 import com.ecwid.consul.v1.ConsulClient
 import com.ecwid.consul.v1.QueryParams
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
-
 import grizzled.slf4j.Logging
 import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
+import com.monarchapis.apimanager.security.AuthenticationRequest
 
 class ConsulLoadBalancer(client: ConsulClient) extends LoadBalancer with Runnable with Logging {
   private var index: Option[Long] = None
@@ -47,7 +44,7 @@ class ConsulLoadBalancer(client: ConsulClient) extends LoadBalancer with Runnabl
     running = false
   }
 
-  def getTarget(service: Service): Option[String] = {
+  def getTarget(service: Service, request: AuthenticationRequest, claims: Map[String, Any]): Option[String] = {
     targets.get(service.name) match {
       case Some(registration) => {
         val target = if (service.requestWeights.size == 0) {
@@ -223,8 +220,8 @@ case class TagPartitions(
   val tagPartitions: HashMap[String, Buffer[ServiceInstance]])
 
 case class ServiceRegistration(
-  val instances: List[ServiceInstance],
-  val counters: HashMap[String, AtomicInteger] = HashMap()) {
+    val instances: List[ServiceInstance],
+    val counters: HashMap[String, AtomicInteger] = HashMap()) {
 
   def getCounter(tag: String) = {
     counters.get(tag) match {
@@ -240,10 +237,10 @@ case class ServiceRegistration(
 }
 
 case class ServiceInstance(
-  val id: String,
-  val host: String,
-  val port: Int,
-  val tags: Set[String]) {
+    val id: String,
+    val host: String,
+    val port: Int,
+    val tags: Set[String]) {
   override def toString = {
     val tagString = if (!tags.isEmpty) {
       val sb = new StringBuffer
@@ -259,5 +256,13 @@ case class ServiceInstance(
     } else { "" }
 
     s"$id @ $host:$port$tagString"
+  }
+}
+
+class RoundRobinCounter {
+  private val counter = new AtomicInteger(0)
+
+  def next(upperBoundary: Int) = {
+    counter.getAndIncrement % upperBoundary
   }
 }

@@ -407,8 +407,6 @@ class MongoDBAnalyticsService(
 
     val expression = metricField.storeAs + ":" + queryHash
 
-    conn.requestStart
-
     val insert = (tier: Tier, gaps: List[Bin]) => {
       if (tier.stored) {
         gaps.foreach(gap => {
@@ -585,47 +583,43 @@ class MongoDBAnalyticsService(
 
     self = compute
 
-    try {
-      val bins = computePyramidal(tier, start, end, fillGaps)
+    val bins = computePyramidal(tier, start, end, fillGaps)
 
-      val labels = if (metricField.`type` == AnalyticsFieldType.STRING) {
-        metricField.refersTo match {
-          case Some(refersTo) => {
-            DisplayLabelSources.lookup.get(refersTo) match {
-              case Some(lookup) => {
-                val builder = Set.newBuilder[String]
+    val labels = if (metricField.`type` == AnalyticsFieldType.STRING) {
+      metricField.refersTo match {
+        case Some(refersTo) => {
+          DisplayLabelSources.lookup.get(refersTo) match {
+            case Some(lookup) => {
+              val builder = Set.newBuilder[String]
 
-                bins.foreach(bin => {
-                  bin.counts.foreach(count => {
-                    builder ++= count.keySet filter (v => v.length > 0)
-                  })
+              bins.foreach(bin => {
+                bin.counts.foreach(count => {
+                  builder ++= count.keySet filter (v => v.length > 0)
                 })
+              })
 
-                Some(lookup.getDisplayLabels(builder.result))
-              }
-              case None => {
-                warn(s"Invalid reference $refersTo")
-                None
-              }
+              Some(lookup.getDisplayLabels(builder.result))
+            }
+            case None => {
+              warn(s"Invalid reference $refersTo")
+              None
             }
           }
-          case None => None
         }
-      } else {
-        None
+        case None => None
       }
-
-      ( //
-        start, //
-        end, //
-        event.dateTimeZone.getOffset(0), //
-        metricField.`type`.toString,
-        tier.key,
-        bins,
-        labels)
-    } finally {
-      conn.requestDone
+    } else {
+      None
     }
+
+    ( //
+      start, //
+      end, //
+      event.dateTimeZone.getOffset(0), //
+      metricField.`type`.toString,
+      tier.key,
+      bins,
+      labels)
   }
 
   def counts(

@@ -73,8 +73,6 @@ object Encryptor {
    * @param cleartext
    *            cleartext to be encrypted
    * @return ciphertext
-   * @throws Exception
-   *             on any error encountered in encryption
    */
   def encrypt(salt: Array[Byte], iterations: Int, password: String,
     cleartext: Array[Byte]): Array[Byte] = {
@@ -103,8 +101,6 @@ object Encryptor {
    * @param cleartext
    *            cleartext to be encrypted
    * @return ciphertext
-   * @throws Exception
-   *             on any error encountered in encryption
    */
   def encrypt(salt: Array[Byte], iterations: Int, password: Array[Byte],
     cleartext: Array[Byte]): Array[Byte] = {
@@ -184,8 +180,6 @@ object Encryptor {
    * @param ciphertext
    *            ciphertext to be decrypted
    * @return cleartext
-   * @throws Exception
-   *             on any error encountered in decryption
    */
   def decrypt(salt: Array[Byte], iterations: Int, password: String,
     ciphertext: Array[Byte]): Array[Byte] = {
@@ -214,8 +208,6 @@ object Encryptor {
    * @param ciphertext
    *            ciphertext to be decrypted
    * @return cleartext
-   * @throws Exception
-   *             on any error encountered in decryption
    */
   def decrypt(salt: Array[Byte], iterations: Int, password: Array[Byte],
     ciphertext: Array[Byte]): Array[Byte] = {

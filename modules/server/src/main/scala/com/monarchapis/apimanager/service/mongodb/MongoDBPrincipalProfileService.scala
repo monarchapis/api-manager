@@ -24,14 +24,20 @@ import com.monarchapis.apimanager.service._
 import com.mongodb.casbah.Imports._
 import grizzled.slf4j.Logging
 import javax.inject.Inject
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.cache.CacheManager
 
 class MongoDBPrincipalProfileService @Inject() (
-  val connectionManager: MultitenantMongoDBConnectionManager,
-  val logService: LogService) extends PrincipalProfileService with ServiceSupport[PrincipalProfile] with Logging {
+    val connectionManager: MultitenantMongoDBConnectionManager,
+    val logService: LogService,
+    val cacheManager: CacheManager) extends PrincipalProfileService with ServiceSupport[PrincipalProfile] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  val cache = cacheManager.getCache("principalProfiles")
 
   protected val entityName = "principalProfile"
   protected val displayName = "principal profile"
@@ -57,6 +63,12 @@ class MongoDBPrincipalProfileService @Inject() (
 
   def getDisplayLabels(ids: Set[String]): Map[String, String] = getDisplayLabels(ids, "name")
 
+  protected override def handleCacheEvict(principalProfile: PrincipalProfile) {
+    cache.evict(principalProfile.id)
+    cache.evict("name:" + principalProfile.name)
+  }
+
+  @Cacheable(value = Array("principalProfiles"), key = "'name:'.concat(#name)")
   def findByName(name: String): Option[PrincipalProfile] = {
     val q = MongoDBObject("name_lc" -> name.toLowerCase)
     val entity = create(collection.findOne(q))

@@ -5,10 +5,12 @@
 	xmlns:c="http://www.springframework.org/schema/c"
 	xmlns:util="http://www.springframework.org/schema/util"
 	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cache="http://www.springframework.org/schema/cache"
 	xsi:schemaLocation="
-	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
-	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
 
 	<!-- Basic caching config -->
 	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
@@ -124,8 +126,8 @@
 	<bean
 		id="mongoDbPrincipalClaimsService"
 		class="com.monarchapis.apimanager.service.mongodb.MongoDBPrincipalClaimsService" />
-	
-	<!-- Use Consul for Service Registration -->
+
+	<!-- Use Consul Service Registration for load balancing -->
 	<!--
 	<bean
 		id="consulClient"
@@ -135,12 +137,39 @@
 	</bean>
 
 	<bean
-		id="consulLoadBalancer"
+		id="loadBalancer"
 		class="com.monarchapis.apimanager.service.loadbalancing.ConsulLoadBalancer">
 		<constructor-arg ref="consulClient" />
 	</bean>
 	-->
+
+	<!-- Use upstreams (Nginx/Zuul) for load balancing (surrounds the service name with a prefix and suffix) -->
+	<!--
+	<bean
+		id="loadBalancer"
+		class="com.monarchapis.apimanager.service.loadbalancing.UpstreamLoadBalancer">
+		<property name="prefix" value="" />
+		<property name="suffix" value="_backend" />
+	</bean>
+	-->
 	
+	<!-- Chain load balancers - first one that returns a value is selected -->
+	<!--
+	<bean
+		id="loadBalancer"
+		class="com.monarchapis.apimanager.service.loadbalancing.LoadBalancerChain">
+		<constructor-arg>
+			<list>
+				<bean class="CUSTOM LOAD BALANCER HERE" />
+				<bean class="com.monarchapis.apimanager.service.loadbalancing.UpstreamLoadBalancer">
+					<property name="prefix" value="" />
+					<property name="suffix" value="_backend" />
+				</bean>
+			</list>
+		</constructor-arg>
+	</bean>
+	-->
+
 	<!-- BEGIN: Analytics configuration -->
 	<bean
 		id="analyticsConfigurationFactory"
@@ -160,7 +189,7 @@
 	<bean
 		id="eventValidator"
 		class="com.monarchapis.apimanager.analytics.EventValidator" />
-	
+
 	<!-- MaxMind beans -->
 	<bean
 		id="maxMindGeoIP2DatabaseReaderFactory"
@@ -173,7 +202,7 @@
 		<constructor-arg ref="maxMindGeoIP2DatabaseReaderFactory" />
 	</bean>
 	<!-- /MaxMind beans -->
-	
+
 	<!-- Add custom event processors here -->
 
 	<bean

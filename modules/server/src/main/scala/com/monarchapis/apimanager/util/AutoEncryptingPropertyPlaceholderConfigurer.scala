@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
 import org.jasypt.encryption.StringEncryptor
 import org.jasypt.properties.PropertyValueEncryptionUtils
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
 import org.springframework.core.io.Resource
 
@@ -63,7 +62,7 @@ class AutoEncryptingPropertyPlaceholderConfigurer(stringEncryptor: StringEncrypt
     super.setLocations(locations: _*)
   }
 
-  def setLocations(locations: java.util.List[Resource]) {
+  def setEncryptedLocations(locations: java.util.List[Resource]) {
     locations.foreach(location => encryptFile(location))
     super.setLocations(locations: _*)
   }
@@ -80,7 +79,7 @@ class AutoEncryptingPropertyPlaceholderConfigurer(stringEncryptor: StringEncrypt
         val key = StringUtils.substringBefore(line, "=").trim
         val value = StringUtils.substringAfter(line, "=").trim
 
-        if (key == "encrpytion.base64Key" && StringUtils.isEmpty(value)) {
+        if (key == "encryption.base64Key" && StringUtils.isEmpty(value)) {
           logger.info(s"Initializing master encryption key")
           val genkey = new Array[Byte](16)
           SecureRandom.getInstance("SHA1PRNG").nextBytes(genkey)

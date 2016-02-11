@@ -219,7 +219,7 @@ trait ServiceManager {
 }
 
 trait LoadBalancer {
-  def getTarget(service: Service): Option[String]
+  def getTarget(service: Service, request: AuthenticationRequest, claims: Map[String, Any]): Option[String]
 }
 
 class EntityEventAggregator[T]() {

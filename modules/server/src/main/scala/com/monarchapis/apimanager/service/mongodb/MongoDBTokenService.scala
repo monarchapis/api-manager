@@ -18,26 +18,28 @@
 package com.monarchapis.apimanager.service.mongodb
 
 import scala.collection.mutable.Builder
-
 import org.joda.time.DateTime
-
 import com.monarchapis.apimanager.model._
 import com.monarchapis.apimanager.service._
 import com.mongodb.casbah.Imports._
-
 import grizzled.slf4j.Logging
 import javax.inject.Inject
+import org.springframework.cache.CacheManager
 
 class MongoDBTokenService @Inject() (
-  val connectionManager: MultitenantMongoDBConnectionManager,
-  val clientService: ClientService,
-  val encryptionManager: EncryptionManager,
-  val logService: LogService) extends TokenService with ServiceSupport[Token] with Logging {
+    val connectionManager: MultitenantMongoDBConnectionManager,
+    val clientService: ClientService,
+    val encryptionManager: EncryptionManager,
+    val logService: LogService,
+    val cacheManager: CacheManager) extends TokenService with ServiceSupport[Token] with Logging {
   require(connectionManager != null, "connectionManager is required")
   require(clientService != null, "clientService is required")
   require(logService != null, "logService is required")
+  require(cacheManager != null, "cacheManager is required")
 
   info(s"$this")
+
+  val cacheByApiKey = cacheManager.getCache("tokensByToken")
 
   protected val entityName = "token"
   protected val displayName = "token"
@@ -99,11 +101,38 @@ class MongoDBTokenService @Inject() (
 
   protected override def defaultSort = MongoDBObject("_id" -> 1)
 
+  override def create(entity: Token) = {
+    val token = super.create(entity)
+
+    if (entity.lifecycle != "session") {
+      cacheByApiKey.put(token, entity)
+    }
+
+    token
+  }
+
   def findByToken(token: String) = {
-    val q = MongoDBObject("token" -> encryptionManager.encrypt(token))
-    val entity = create(collection.findOne(q))
-    if (entity.isDefined) checkReadAccess(entity.get)
+    val ret = cacheByApiKey.get(token, classOf[Token])
+
+    val entity = if (ret != null) {
+      Some(ret)
+    } else {
+      val q = MongoDBObject("token" -> encryptionManager.encrypt(token))
+      create(collection.findOne(q)).map { entity =>
+        if (entity.lifecycle != "session") {
+          cacheByApiKey.put(token, entity)
+        }
+
+        entity
+      }
+    }
+
+    if (entity.isDefined) {
+      checkReadAccess(entity.get)
+    }
+
     entity
+
   }
 
   def findByRefresh(token: String) = {

@@ -965,3 +965,10 @@ table.last-row-hidden-buttons a[role="toggle"] {
     top: 0;
     width: 24px;
 }
+
+.section {
+	font-size: 85%;
+	padding: 6px 10px;
+	color: white;
+	background-color: rgba(58,58,58,0.75);
+}

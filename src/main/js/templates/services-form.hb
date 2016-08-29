@@ -25,30 +25,44 @@
 		</fieldset>
 		<fieldset>
 			<legend>Proxy Settings</legend>
+			<p class="section box-s">Request Matching</p>
 			<div class="row">
+				<div class="col-md-7">
+					{{input "uriPrefix" "URI Pattern Prefix" caption="surround variables with curly brackets"}}
+
+					<div class="row">
+						<div class="col-md-8">
+							{{#select "versionLocation" "Version Location"}}
+								<option value="">No version parameter</option>
+								<option value="path">Path parameter in URI (version variable)</option>
+								<option value="header">Mime Type (Accept Header)</option>
+								<option value="query">Query Parameter</option>
+								<option value="header,query">Mime Type, then Query Parameter</option>
+								<option value="query,header">Query Parameter, then Mime Type</option>
+							{{/select}}
+						</div>
+						<div class="col-md-4">
+							{{input "defaultVersion" "Default Version"}}
+						</div>
+					</div>
+				</div>
 				<div class="col-md-5">
-					{{input "uriPrefix" "URI Pattern Prefix"}}
-				</div>
-				<div class="col-md-4">
-					{{#select "versionLocation" "Version Location"}}
-						<option value="">No version parameter</option>
-						<option value="path">Path parameter in URI</option>
-						<option value="header">Mime Type (Accept Header)</option>
-						<option value="query">Query Parameter</option>
-						<option value="header,query">Mime Type, then Query Parameter</option>
-						<option value="query,header">Query Parameter, then Mime Type</option>
-					{{/select}}
-				</div>
-				<div class="col-md-3">
-					{{input "defaultVersion" "Default/Current Version"}}
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
 					{{textarea "hostnames" "Hostnames" caption="One per line, leave empty for any hostname" formatter="stringList"}}
 				</div>
+			</div>
+			<p class="section box-s">Upstream</p>
+			<div class="row">
+				<div class="col-md-2">
+					{{#select "scheme" "Scheme"}}
+						<option value="http">http</option>
+						<option value="https">https</option>
+					{{/select}}
+				</div>
 				<div class="col-md-6">
-					{{textarea "requestWeights" "Request Weights" caption="One per line, leave empty for no groupings" formatter="integerMap" tooltip="Request Weights are used to randomly spread load across groups of services that share a specific tag value.  For example, you might send 10% to a new version of the service in order to test that it is working properly.  This text area excepts key-value pairs that represent the tag name and weight number.  You specify one per line and the weight numbers are relative values and do not need to add up to 100.  If blank, all traffic will be distributed evenly.  The tag \"default\" can be used for the service instances that are not tagged with a tag name from your list."}}
+					{{textarea "requestWeights" "Request Weights" caption="One per line, leave empty for default upstream" formatter="integerMap" tooltip="Request Weights are used to randomly spread load across groups of services that share a specific tag value.  For example, you might send 10% to a new version of the service in order to test that it is working properly.  This text area excepts key-value pairs that represent the tag name and weight number.  You specify one per line and the weight numbers are relative values and do not need to add up to 100.  If blank, all traffic will be distributed evenly.  The tag \"default\" can be used for the service instances that are not tagged with a tag name from your list."}}
+				</div>
+				<div class="col-md-4">
+					{{input "contextRoot" "Context Root"}}
 				</div>
 			</div>
 		</fieldset>

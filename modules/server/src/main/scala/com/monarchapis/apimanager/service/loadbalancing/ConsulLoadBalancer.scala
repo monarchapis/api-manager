@@ -80,7 +80,7 @@ class ConsulLoadBalancer(client: ConsulClient) extends LoadBalancer with Runnabl
         debug(s"Returning target $target")
 
         target match {
-          case Some(target) => Some(target.host + ':' + target.port)
+          case Some(target) => Some(service.scheme + "://" + target.host + ':' + target.port + service.contextRoot.getOrElse(""))
           case None => None
         }
       }

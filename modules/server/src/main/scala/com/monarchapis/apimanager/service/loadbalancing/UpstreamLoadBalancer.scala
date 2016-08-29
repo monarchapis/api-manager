@@ -14,11 +14,13 @@ class UpstreamLoadBalancer extends LoadBalancer with Logging {
   private val random = new SecureRandom
 
   def getTarget(service: Service, request: AuthenticationRequest, claims: Map[String, Any]): Option[String] = {
-    if (service.requestWeights.size == 0) {
-      Some(prefix + service.name + suffix)
+    val upstream = if (service.requestWeights.size == 0) {
+      prefix + service.name + suffix
     } else {
-      Some(getRandomWeightedTag(service))
+      getRandomWeightedTag(service)
     }
+
+    Some(service.scheme + "://" + upstream + service.contextRoot.getOrElse(""))
   }
 
   protected def getRandomWeightedTag(service: Service) = {

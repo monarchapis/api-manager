@@ -145,6 +145,8 @@ class MongoDBServiceService @Inject() (
     .field("type", "type", FieldType.CS_STRING, true, accessor = (e) => e.`type`)
     .field("description", "description", FieldType.CS_STRING, true, accessor = (e) => e.description)
     .field("uriPrefix", "uriPrefix", FieldType.CS_STRING, true, accessor = (e) => e.uriPrefix)
+    .field("scheme", "scheme", FieldType.CS_STRING, true, accessor = (e) => e.scheme)
+    .field("contextRoot", "contextRoot", FieldType.CS_STRING, false, accessor = (e) => e.contextRoot)
     .field("versionLocation", "versionLocation", FieldType.CS_STRING, false, accessor = (e) => e.versionLocation)
     .field("defaultVersion", "defaultVersion", FieldType.CS_STRING, false, accessor = (e) => e.defaultVersion)
     .field("hostnames", "hostnames", FieldType.OTHER, false, accessor = (e) => toList(e.hostnames))
@@ -283,6 +285,8 @@ class MongoDBServiceService @Inject() (
       `type` = optional[String](o.get("type")),
       description = optional[String](o.get("description")),
       uriPrefix = optional[String](o.get("uriPrefix")),
+      scheme = o.getAsOrElse[String]("scheme", "http"),
+      contextRoot = optional[String](o.get("contextRoot")),
       versionLocation = optional[String](o.get("versionLocation")),
       defaultVersion = optional[String](o.get("defaultVersion")),
       hostnames = set[String](o.getAs[MongoDBList]("hostnames")),

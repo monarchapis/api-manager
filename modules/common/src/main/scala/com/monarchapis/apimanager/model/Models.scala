@@ -503,6 +503,8 @@ case class Service(
   @BeanProperty `type`: Option[String],
   @BeanProperty description: Option[String],
   @BeanProperty uriPrefix: Option[String] = None,
+  @BeanProperty scheme: String,
+  @BeanProperty contextRoot: Option[String] = None,
   @BeanProperty versionLocation: Option[String] = None,
   @BeanProperty defaultVersion: Option[String] = None,
   @BeanProperty hostnames: Set[String] = Set(),
@@ -520,6 +522,8 @@ case class Service(
   def withType(`type`: Option[String]) = copy(`type` = `type`)
   def withDescription(description: Option[String]) = copy(description = description)
   def withUriPrefix(uriPrefix: Option[String]) = copy(uriPrefix = uriPrefix)
+  def withScheme(scheme: String) = copy(scheme = scheme)
+  def withContextRoot(contextRoot: Option[String]) = copy(contextRoot = contextRoot)
   def withVersionLocation(versionLocation: Option[String]) = copy(versionLocation = versionLocation)
   def withDefaultVersion(defaultVersion: Option[String]) = copy(defaultVersion = defaultVersion)
   def withHostnames(hostnames: Set[String]) = copy(hostnames = hostnames)
